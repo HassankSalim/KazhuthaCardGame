@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: kazhutha
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: REACT_APP_SERVER_URL
+        sync: false
+    healthCheckPath: /api/healthz

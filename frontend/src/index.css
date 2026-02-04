@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #1a2e1a;
+  min-height: 100vh;
+}
+
+@layer components {
+  .card-base {
+    @apply relative bg-white rounded-lg transition-all duration-200;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .card-playable {
+    @apply cursor-pointer;
+  }
+
+  .card-playable:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+  }
+
+  .card-disabled {
+    @apply opacity-70 cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply px-6 py-3 bg-emerald-600 text-white font-semibold rounded-lg
+           hover:bg-emerald-700 transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-emerald-400;
+  }
+
+  .btn-secondary {
+    @apply px-6 py-3 bg-slate-600 text-white font-semibold rounded-lg
+           hover:bg-slate-700 transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-slate-400;
+  }
+
+  .btn-warning {
+    @apply px-4 py-2 bg-amber-600 text-white font-semibold rounded-lg
+           hover:bg-amber-700 transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-amber-400;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white
+           placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-emerald-400
+           focus:border-transparent transition-all duration-200;
+  }
+
+  .game-card {
+    @apply bg-[#243d24] rounded-2xl;
+  }
+
+  .player-card {
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl bg-[#2d4a2d] min-w-[140px];
+  }
+
+  .player-card-active {
+    @apply bg-[#3d5a3d] ring-2 ring-emerald-500;
+  }
+
+  .play-area {
+    @apply rounded-2xl border-2 border-dashed border-[#4a6b4a] bg-[#1e3220];
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
