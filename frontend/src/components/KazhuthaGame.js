@@ -27,6 +27,8 @@ const KazhuthaGame = () => {
   const [displayedPile, setDisplayedPile] = useState(null); // For showing resolved pile
   const [resolvedInfo, setResolvedInfo] = useState(null); // Winner info for resolved pile
   const [takenHandDisplay, setTakenHandDisplay] = useState(null); // For showing taken hand cards
+  const [draggedCard, setDraggedCard] = useState(null); // Card being dragged
+  const [isDragOver, setIsDragOver] = useState(false); // Whether dragging over drop zone
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
   const resolvedPileTimeoutRef = useRef(null);
@@ -568,8 +570,26 @@ const KazhuthaGame = () => {
         </div>
       )}
 
-      {/* Play Area */}
-      <div className="play-area p-4 sm:p-6 mb-4 min-h-[120px] sm:min-h-[140px] flex flex-col items-center justify-center">
+      {/* Play Area - Drop Zone */}
+      <div
+        className={`play-area drop-zone p-4 sm:p-6 mb-4 min-h-[120px] sm:min-h-[140px] flex flex-col items-center justify-center ${isDragOver ? 'drop-zone-active' : ''}`}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          if (isMyTurn && draggedCard) {
+            setIsDragOver(true);
+          }
+        }}
+        onDragLeave={() => setIsDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setIsDragOver(false);
+          if (isMyTurn && draggedCard) {
+            playCard(draggedCard);
+            setDraggedCard(null);
+          }
+        }}
+      >
         {displayedPile?.length > 0 ? (
           <div className="flex flex-col items-center">
             <div className="flex flex-wrap gap-3 justify-center items-end">
@@ -603,7 +623,7 @@ const KazhuthaGame = () => {
           </div>
         ) : (
           <div className="text-white/30 text-sm">
-            {isMyTurn ? 'Your turn - play a card' : `Waiting for ${gameData?.current_player}...`}
+            {isMyTurn ? 'Your turn - drag a card here to play' : `Waiting for ${gameData?.current_player}...`}
           </div>
         )}
       </div>
@@ -620,7 +640,9 @@ const KazhuthaGame = () => {
             <Card
               key={`${card.suit}-${card.rank}-${idx}`}
               card={card}
-              onClick={() => playCard(card)}
+              draggable={isMyTurn}
+              onDragStart={(card) => setDraggedCard(card)}
+              onDragEnd={() => setDraggedCard(null)}
               disabled={!isMyTurn}
             />
           ))}

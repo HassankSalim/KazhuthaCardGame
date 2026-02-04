@@ -23,17 +23,36 @@ const RANK_DISPLAY = {
   '2': '2',
 };
 
-const Card = ({ card, onClick, disabled, small }) => {
+const Card = ({ card, onClick, disabled, small, draggable, onDragStart, onDragEnd }) => {
   const suit = SUIT_CONFIG[card?.suit] || SUIT_CONFIG.SPADES;
   const rank = RANK_DISPLAY[card?.rank] || '?';
+
+  const isDraggable = draggable && !disabled;
+
+  const handleDragStart = (e) => {
+    if (isDraggable && onDragStart) {
+      e.dataTransfer.effectAllowed = 'move';
+      onDragStart(card);
+    }
+  };
+
+  const handleDragEnd = (e) => {
+    if (onDragEnd) {
+      onDragEnd();
+    }
+  };
 
   return (
     <div
       onClick={disabled ? undefined : onClick}
+      draggable={isDraggable}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
       className={`
         card-base
         ${small ? 'w-12 h-16 sm:w-14 sm:h-20' : 'w-14 h-20 sm:w-16 sm:h-24 md:w-[72px] md:h-[100px]'}
-        ${!disabled && onClick ? 'card-playable' : ''}
+        ${isDraggable ? 'card-draggable' : ''}
+        ${!disabled && onClick && !draggable ? 'card-playable' : ''}
         ${disabled ? 'card-disabled' : ''}
         select-none relative
       `}
