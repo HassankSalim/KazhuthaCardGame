@@ -195,6 +195,9 @@ class GameSession:
         self.round_in_progress = False
         self.last_action: Optional[str] = None  # For UI feedback
         self.game_first_card_played = False
+        self.resolved_pile: List[tuple] = []  # Store last resolved pile for display
+        self.resolved_winner: Optional[str] = None  # Who won the last round
+        self.suit_was_broken: bool = False  # Whether suit was broken in last round
 
     def add_player(self, player_name: str) -> bool:
         if player_name in self.players or self.game_started:
@@ -276,6 +279,7 @@ class GameSession:
     def take_hand_from_left(self, player_name: str) -> tuple:
         """
         Special Rule: A player can take the entire hand from the player on their left.
+        Can only be done on your turn.
         Returns (success, message, taken_from_player)
         """
         if not self.game_started or self.finished:
@@ -286,6 +290,10 @@ class GameSession:
 
         if player_name not in self.active_players:
             return (False, "You are not an active player", None)
+
+        # Can only take hand on your turn
+        if player_name != self.current_player:
+            return (False, "You can only take hand on your turn", None)
 
         left_player = self.get_player_on_left(player_name)
         if not left_player:
@@ -309,9 +317,14 @@ class GameSession:
         # Check if game is over (only one player left)
         self._check_game_over()
 
-        # Update current player if needed
-        if self.current_player in self.winners:
-            self._advance_to_next_active_player()
+        # The player who took the hand continues playing (they're still current player)
+        # Just need to update the index since active_players changed
+        if player_name in self.active_players:
+            self.current_player_idx = self.active_players.index(player_name)
+
+        # Clear resolved pile since this is a new action
+        self.resolved_pile = []
+        self.resolved_winner = None
 
         self.last_action = f"{player_name} took {left_player}'s hand!"
 
@@ -345,6 +358,9 @@ class GameSession:
             self.original_suit = card.suit
             self.current_suit = card.suit
             self.round_in_progress = True
+            # Clear resolved pile from previous round when new round starts
+            self.resolved_pile = []
+            self.resolved_winner = None
 
         # Must follow suit if possible
         if self.current_suit:
@@ -381,6 +397,11 @@ class GameSession:
         winning_play = max(original_suit_cards, key=lambda x: x[1].value)
         winning_player = winning_play[0]
 
+        # Store the resolved pile for display before clearing
+        self.resolved_pile = list(self.current_pile)
+        self.resolved_winner = winning_player
+        self.suit_was_broken = suit_broken
+
         if suit_broken:
             # Give all cards to the player with highest card of original suit
             for _, card in self.current_pile:
@@ -391,6 +412,7 @@ class GameSession:
             # All same suit - discard the cards
             for _, card in self.current_pile:
                 self.discarded_cards.append(card)
+            self.last_action = f"Cards discarded - {winning_player} leads next!"
 
         # Clear the round
         self.current_pile = []
@@ -458,10 +480,11 @@ class GameSession:
     def get_state(self, player_name: Optional[str] = None) -> dict:
         """Get the current game state for a specific player"""
 
-        # Determine who can take hand from left
+        # Determine who can take hand from left (only on your turn)
         can_take_from_left = None
         if (player_name and
             player_name in self.active_players and
+            player_name == self.current_player and  # Only on your turn
             self.game_started and
             not self.finished and
             not self.round_in_progress):
@@ -496,7 +519,13 @@ class GameSession:
             'last_action': self.last_action,
             'can_take_from_left': can_take_from_left,
             'round_in_progress': self.round_in_progress,
-            'discarded_count': len(self.discarded_cards)
+            'discarded_count': len(self.discarded_cards),
+            'resolved_pile': [
+                {'player': pname, 'card': card.to_dict()}
+                for pname, card in self.resolved_pile
+            ],
+            'resolved_winner': self.resolved_winner,
+            'suit_was_broken': self.suit_was_broken
         }
 
         if player_name and player_name in self.players:

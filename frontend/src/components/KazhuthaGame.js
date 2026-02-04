@@ -24,8 +24,11 @@ const KazhuthaGame = () => {
   const [notification, setNotification] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
   const [joinCode, setJoinCode] = useState('');
+  const [displayedPile, setDisplayedPile] = useState(null); // For showing resolved pile
+  const [resolvedInfo, setResolvedInfo] = useState(null); // Winner info for resolved pile
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
+  const resolvedPileTimeoutRef = useRef(null);
 
   useEffect(() => {
     if (error) {
@@ -40,6 +43,46 @@ const KazhuthaGame = () => {
       return () => clearTimeout(timer);
     }
   }, [notification]);
+
+  // Handle displaying resolved pile with timeout
+  useEffect(() => {
+    // Clear any existing timeout
+    if (resolvedPileTimeoutRef.current) {
+      clearTimeout(resolvedPileTimeoutRef.current);
+    }
+
+    // If there's a current pile, show it immediately
+    if (gameData?.current_pile?.length > 0) {
+      setDisplayedPile(gameData.current_pile);
+      setResolvedInfo(null);
+      return;
+    }
+
+    // If round just ended and there's a resolved pile, show it for a timeout
+    if (gameData?.resolved_pile?.length > 0 && !gameData?.current_pile?.length) {
+      setDisplayedPile(gameData.resolved_pile);
+      setResolvedInfo({
+        winner: gameData.resolved_winner,
+        suitBroken: gameData.suit_was_broken
+      });
+
+      // Clear the displayed pile after 2.5 seconds
+      resolvedPileTimeoutRef.current = setTimeout(() => {
+        setDisplayedPile(null);
+        setResolvedInfo(null);
+      }, 2500);
+    } else if (!gameData?.resolved_pile?.length) {
+      // No resolved pile, clear display
+      setDisplayedPile(null);
+      setResolvedInfo(null);
+    }
+
+    return () => {
+      if (resolvedPileTimeoutRef.current) {
+        clearTimeout(resolvedPileTimeoutRef.current);
+      }
+    };
+  }, [gameData?.current_pile, gameData?.resolved_pile, gameData?.resolved_winner, gameData?.suit_was_broken]);
 
   const connectWebSocket = useCallback(() => {
     if (!gameId || !playerName) return;
@@ -219,9 +262,12 @@ const KazhuthaGame = () => {
 
   const resetGame = () => {
     if (wsRef.current) wsRef.current.close();
+    if (resolvedPileTimeoutRef.current) clearTimeout(resolvedPileTimeoutRef.current);
     setGameId('');
     setJoinCode('');
     setGameData(null);
+    setDisplayedPile(null);
+    setResolvedInfo(null);
     setScreen('welcome');
     setError('');
     setNotification('');
@@ -474,14 +520,25 @@ const KazhuthaGame = () => {
 
       {/* Play Area */}
       <div className="play-area p-4 sm:p-6 mb-4 min-h-[120px] sm:min-h-[140px] flex flex-col items-center justify-center">
-        {gameData?.current_pile?.length > 0 ? (
-          <div className="flex flex-wrap gap-3 justify-center items-end">
-            {gameData.current_pile.map((play, index) => (
-              <div key={index} className="flex flex-col items-center">
-                <Card card={play.card} small />
-                <span className="text-white/60 text-[10px] sm:text-xs mt-1">{play.player}</span>
+        {displayedPile?.length > 0 ? (
+          <div className="flex flex-col items-center">
+            <div className="flex flex-wrap gap-3 justify-center items-end">
+              {displayedPile.map((play, index) => (
+                <div key={index} className="flex flex-col items-center">
+                  <Card card={play.card} small />
+                  <span className={`text-[10px] sm:text-xs mt-1 ${
+                    resolvedInfo?.winner === play.player ? 'text-amber-400 font-bold' : 'text-white/60'
+                  }`}>{play.player}</span>
+                </div>
+              ))}
+            </div>
+            {resolvedInfo && (
+              <div className={`mt-3 text-sm font-medium ${resolvedInfo.suitBroken ? 'text-red-400' : 'text-emerald-400'}`}>
+                {resolvedInfo.suitBroken
+                  ? `${resolvedInfo.winner} picks up the pile!`
+                  : `Cards discarded - ${resolvedInfo.winner} leads next!`}
               </div>
-            ))}
+            )}
           </div>
         ) : (
           <div className="text-white/30 text-sm">
