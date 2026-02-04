@@ -198,6 +198,9 @@ class GameSession:
         self.resolved_pile: List[tuple] = []  # Store last resolved pile for display
         self.resolved_winner: Optional[str] = None  # Who won the last round
         self.suit_was_broken: bool = False  # Whether suit was broken in last round
+        self.taken_hand_cards: List[Card] = []  # Cards taken in take hand action
+        self.taken_hand_from: Optional[str] = None  # Who the cards were taken from
+        self.taken_hand_by: Optional[str] = None  # Who took the cards
 
     def add_player(self, player_name: str) -> bool:
         if player_name in self.players or self.game_started:
@@ -303,9 +306,14 @@ class GameSession:
             return (False, "That player has no cards", None)
 
         # Take all cards from the left player
-        taken_cards = self.players[left_player]
+        taken_cards = list(self.players[left_player])  # Make a copy for display
         self.players[player_name].extend(taken_cards)
         self.players[left_player] = []
+
+        # Store taken cards info for display to all players
+        self.taken_hand_cards = taken_cards
+        self.taken_hand_from = left_player
+        self.taken_hand_by = player_name
 
         # Sort the combined hand
         self.players[player_name].sort(key=lambda c: (c.suit.value, -c.value))
@@ -361,6 +369,10 @@ class GameSession:
             # Clear resolved pile from previous round when new round starts
             self.resolved_pile = []
             self.resolved_winner = None
+            # Clear taken hand info
+            self.taken_hand_cards = []
+            self.taken_hand_from = None
+            self.taken_hand_by = None
 
         # Must follow suit if possible
         if self.current_suit:
@@ -525,7 +537,10 @@ class GameSession:
                 for pname, card in self.resolved_pile
             ],
             'resolved_winner': self.resolved_winner,
-            'suit_was_broken': self.suit_was_broken
+            'suit_was_broken': self.suit_was_broken,
+            'taken_hand_cards': [card.to_dict() for card in self.taken_hand_cards],
+            'taken_hand_from': self.taken_hand_from,
+            'taken_hand_by': self.taken_hand_by
         }
 
         if player_name and player_name in self.players:

@@ -26,9 +26,11 @@ const KazhuthaGame = () => {
   const [joinCode, setJoinCode] = useState('');
   const [displayedPile, setDisplayedPile] = useState(null); // For showing resolved pile
   const [resolvedInfo, setResolvedInfo] = useState(null); // Winner info for resolved pile
+  const [takenHandDisplay, setTakenHandDisplay] = useState(null); // For showing taken hand cards
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
   const resolvedPileTimeoutRef = useRef(null);
+  const takenHandTimeoutRef = useRef(null);
 
   useEffect(() => {
     if (error) {
@@ -70,7 +72,7 @@ const KazhuthaGame = () => {
       resolvedPileTimeoutRef.current = setTimeout(() => {
         setDisplayedPile(null);
         setResolvedInfo(null);
-      }, 6000);
+      }, 3000);
     } else if (!gameData?.resolved_pile?.length) {
       // No resolved pile, clear display
       setDisplayedPile(null);
@@ -83,6 +85,35 @@ const KazhuthaGame = () => {
       }
     };
   }, [gameData?.current_pile, gameData?.resolved_pile, gameData?.resolved_winner, gameData?.suit_was_broken]);
+
+  // Handle displaying taken hand cards with timeout (fallback for state restoration)
+  useEffect(() => {
+    // Only update display when there are new taken hand cards
+    // Don't clear immediately when backend clears - let the timeout handle it
+    if (gameData?.taken_hand_cards?.length > 0) {
+      // Clear any existing timeout
+      if (takenHandTimeoutRef.current) {
+        clearTimeout(takenHandTimeoutRef.current);
+      }
+
+      setTakenHandDisplay({
+        cards: gameData.taken_hand_cards,
+        from: gameData.taken_hand_from,
+        by: gameData.taken_hand_by
+      });
+
+      // Clear the display after 6 seconds
+      takenHandTimeoutRef.current = setTimeout(() => {
+        setTakenHandDisplay(null);
+      }, 6000);
+    }
+
+    return () => {
+      if (takenHandTimeoutRef.current) {
+        clearTimeout(takenHandTimeoutRef.current);
+      }
+    };
+  }, [gameData?.taken_hand_cards, gameData?.taken_hand_from, gameData?.taken_hand_by]);
 
   const connectWebSocket = useCallback(() => {
     if (!gameId || !playerName) return;
@@ -123,6 +154,20 @@ const KazhuthaGame = () => {
             break;
           case 'hand_taken':
             setGameData(data.game_state);
+            // Directly set takenHandDisplay from the event data
+            if (data.game_state?.taken_hand_cards?.length > 0) {
+              if (takenHandTimeoutRef.current) {
+                clearTimeout(takenHandTimeoutRef.current);
+              }
+              setTakenHandDisplay({
+                cards: data.game_state.taken_hand_cards,
+                from: data.game_state.taken_hand_from,
+                by: data.game_state.taken_hand_by
+              });
+              takenHandTimeoutRef.current = setTimeout(() => {
+                setTakenHandDisplay(null);
+              }, 6000);
+            }
             if (data.player !== playerName) {
               setNotification(`${data.player} took ${data.taken_from}'s hand!`);
             }
@@ -263,11 +308,13 @@ const KazhuthaGame = () => {
   const resetGame = () => {
     if (wsRef.current) wsRef.current.close();
     if (resolvedPileTimeoutRef.current) clearTimeout(resolvedPileTimeoutRef.current);
+    if (takenHandTimeoutRef.current) clearTimeout(takenHandTimeoutRef.current);
     setGameId('');
     setJoinCode('');
     setGameData(null);
     setDisplayedPile(null);
     setResolvedInfo(null);
+    setTakenHandDisplay(null);
     setScreen('welcome');
     setError('');
     setNotification('');
@@ -315,7 +362,7 @@ const KazhuthaGame = () => {
               placeholder="Enter game code"
               value={joinCode}
               onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-              className="input-field font-mono text-center tracking-widest"
+              className="input-field"
               maxLength={6}
             />
 
@@ -542,6 +589,17 @@ const KazhuthaGame = () => {
                   : `Cards discarded - ${resolvedInfo.winner} leads next!`}
               </div>
             )}
+          </div>
+        ) : takenHandDisplay ? (
+          <div className="flex flex-col items-center">
+            <div className="text-amber-400 font-bold text-sm mb-3">
+              {takenHandDisplay.by} took {takenHandDisplay.from}'s hand! ({takenHandDisplay.cards.length} cards)
+            </div>
+            <div className="flex flex-wrap gap-2 justify-center max-h-[200px] overflow-y-auto">
+              {takenHandDisplay.cards.map((card, idx) => (
+                <Card key={`taken-${card.suit}-${card.rank}-${idx}`} card={card} small />
+              ))}
+            </div>
           </div>
         ) : (
           <div className="text-white/30 text-sm">
