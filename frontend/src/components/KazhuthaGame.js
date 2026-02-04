@@ -66,11 +66,11 @@ const KazhuthaGame = () => {
         suitBroken: gameData.suit_was_broken
       });
 
-      // Clear the displayed pile after 2.5 seconds
+      // Clear the displayed pile after 6 seconds
       resolvedPileTimeoutRef.current = setTimeout(() => {
         setDisplayedPile(null);
         setResolvedInfo(null);
-      }, 2500);
+      }, 6000);
     } else if (!gameData?.resolved_pile?.length) {
       // No resolved pile, clear display
       setDisplayedPile(null);
@@ -289,6 +289,9 @@ const KazhuthaGame = () => {
 
   // Welcome Screen
   if (screen === 'welcome') {
+    const hasGameCode = joinCode.trim().length > 0;
+    const hasName = playerName.trim().length > 0;
+
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="game-card w-full max-w-md p-8">
@@ -307,19 +310,6 @@ const KazhuthaGame = () => {
               maxLength={20}
             />
 
-            <button onClick={createGame} className="btn-primary w-full">
-              Create New Game
-            </button>
-
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-white/20"></div>
-              </div>
-              <div className="relative flex justify-center">
-                <span className="px-3 text-white/40 text-sm bg-[#243d24]">or join existing</span>
-              </div>
-            </div>
-
             <input
               type="text"
               placeholder="Enter game code"
@@ -329,9 +319,22 @@ const KazhuthaGame = () => {
               maxLength={6}
             />
 
-            <button onClick={joinGame} className="btn-secondary w-full">
-              Join Game
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={createGame}
+                disabled={!hasName || hasGameCode}
+                className={`btn-primary flex-1 ${(!hasName || hasGameCode) ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                Create Game
+              </button>
+              <button
+                onClick={joinGame}
+                disabled={!hasName || !hasGameCode}
+                className={`btn-secondary flex-1 ${(!hasName || !hasGameCode) ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                Join Game
+              </button>
+            </div>
           </div>
 
           {error && (
