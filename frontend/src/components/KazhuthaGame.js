@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Card, { SuitIndicator } from './Card';
 
-const SERVER_URL = process.env.REACT_APP_SERVER_URL || 'localhost:8000';
-const IS_SECURE = window.location.protocol === 'https:' || SERVER_URL.includes('render.com') || SERVER_URL.includes('railway.app');
+// In production (HTTPS), use the same host. In development, use localhost:8000
+const IS_SECURE = window.location.protocol === 'https:';
+const SERVER_URL = IS_SECURE ? window.location.host : (process.env.REACT_APP_SERVER_URL || 'localhost:8000');
 const BACKEND_URL = `${IS_SECURE ? 'https' : 'http'}://${SERVER_URL}`;
 const WS_URL = `${IS_SECURE ? 'wss' : 'ws'}://${SERVER_URL}`;
 
