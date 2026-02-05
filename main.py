@@ -201,6 +201,9 @@ class GameSession:
         self.taken_hand_cards: List[Card] = []  # Cards taken in take hand action
         self.taken_hand_from: Optional[str] = None  # Who the cards were taken from
         self.taken_hand_by: Optional[str] = None  # Who took the cards
+        self.original_players: List[str] = []  # Players present when game started
+        self.connected_players: set = set()  # Currently connected players
+        self.waiting_for_player: Optional[str] = None  # Disconnected player whose turn it is
 
     def add_player(self, player_name: str) -> bool:
         if player_name in self.players or self.game_started:
@@ -212,16 +215,52 @@ class GameSession:
         return True
 
     def remove_player(self, player_name: str):
-        if player_name in self.players:
-            if self.game_started:
-                # During game, just mark as disconnected
-                self.players[player_name] = []
-                if player_name in self.active_players:
-                    self.active_players.remove(player_name)
-            else:
-                # In lobby, remove completely
-                del self.players[player_name]
-                self.player_order.remove(player_name)
+        if player_name not in self.players:
+            return
+
+        if not self.game_started:
+            # In lobby: remove completely
+            del self.players[player_name]
+            self.player_order.remove(player_name)
+        else:
+            # During game: mark disconnected but PRESERVE cards
+            self.connected_players.discard(player_name)
+            # If it's their turn, set waiting state
+            if player_name == self.current_player and player_name in self.active_players:
+                self.waiting_for_player = player_name
+
+    def can_rejoin(self, player_name: str) -> tuple:
+        """Check if a player can rejoin an in-progress game"""
+        if not self.game_started:
+            return (False, "Game not started - use normal join")
+        if self.finished:
+            return (False, "Game is finished")
+        if player_name not in self.original_players:
+            return (False, "You were not part of this game")
+        if player_name in self.connected_players:
+            return (False, "Player with this name is already connected")
+        return (True, "OK")
+
+    def player_reconnected(self, player_name: str):
+        """Handle a player reconnecting to the game"""
+        self.connected_players.add(player_name)
+
+        # If they have cards and aren't in active_players, restore them
+        if player_name in self.players and len(self.players[player_name]) > 0:
+            if player_name not in self.active_players:
+                # Insert at correct position based on original order
+                original_idx = self.player_order.index(player_name)
+                insert_idx = 0
+                for i, p in enumerate(self.active_players):
+                    if self.player_order.index(p) > original_idx:
+                        break
+                    insert_idx = i + 1
+                self.active_players.insert(insert_idx, player_name)
+
+        # Clear waiting state if we were waiting for this player
+        if self.waiting_for_player == player_name:
+            self.current_player_idx = self.active_players.index(player_name)
+            self.waiting_for_player = None
 
     def start_game(self):
         if len(self.players) < 2:
@@ -252,6 +291,8 @@ class GameSession:
 
         self.game_started = True
         self.game_first_card_played = False
+        self.original_players = list(self.player_order)
+        self.connected_players = set(self.player_order)
 
     def _create_deck(self) -> List[Card]:
         deck = []
@@ -513,7 +554,8 @@ class GameSession:
                     'is_host': name == self.host_name,
                     'is_active': name in self.active_players,
                     'is_winner': name in self.winners,
-                    'is_kazhutha': name == self.kazhutha
+                    'is_kazhutha': name == self.kazhutha,
+                    'is_connected': name in self.connected_players
                 }
                 for name, cards in self.players.items()
             ],
@@ -540,7 +582,8 @@ class GameSession:
             'suit_was_broken': self.suit_was_broken,
             'taken_hand_cards': [card.to_dict() for card in self.taken_hand_cards],
             'taken_hand_from': self.taken_hand_from,
-            'taken_hand_by': self.taken_hand_by
+            'taken_hand_by': self.taken_hand_by,
+            'waiting_for_player': self.waiting_for_player
         }
 
         if player_name and player_name in self.players:
@@ -585,6 +628,22 @@ async def join_game(request: JoinGameRequest):
         raise HTTPException(status_code=404, detail="Game not found")
 
     game = games[game_id]
+
+    # Check if this is a rejoin attempt for an in-progress game
+    if game.game_started:
+        can_rejoin, message = game.can_rejoin(player_name)
+        if can_rejoin:
+            game.player_reconnected(player_name)
+            await manager.broadcast_to_game(game_id, {
+                "type": "player_reconnected",
+                "player_name": player_name,
+                "game_state": game.get_state()
+            })
+            return {"success": True, "game_id": game_id, "rejoined": True}
+        else:
+            raise HTTPException(status_code=400, detail=message)
+
+    # Original logic for lobby joins
     if not game.add_player(player_name):
         raise HTTPException(status_code=400, detail="Cannot join game - name taken or game started")
 
@@ -682,6 +741,17 @@ async def websocket_endpoint(websocket: WebSocket, game_id: str, player_name: st
     # Send initial state if game exists
     if game_id in games:
         game = games[game_id]
+
+        # Mark player as connected if they're part of the game
+        if game.game_started and player_name in game.original_players:
+            game.player_reconnected(player_name)
+            # Notify others that player reconnected
+            await manager.broadcast_to_game(game_id, {
+                "type": "player_reconnected",
+                "player_name": player_name,
+                "game_state": game.get_state()
+            })
+
         await websocket.send_json({
             "type": "connected",
             "game_state": game.get_state(player_name)
@@ -707,6 +777,7 @@ async def websocket_endpoint(websocket: WebSocket, game_id: str, player_name: st
     except WebSocketDisconnect:
         await manager.disconnect(game_id, player_name)
         if game_id in games:
+            games[game_id].remove_player(player_name)
             await manager.broadcast_to_game(game_id, {
                 "type": "player_disconnected",
                 "player_name": player_name,
