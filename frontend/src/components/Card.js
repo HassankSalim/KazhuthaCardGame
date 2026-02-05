@@ -1,10 +1,10 @@
 import React from 'react';
 
 const SUIT_CONFIG = {
-  HEARTS: { symbol: '\u2665', color: '#b8860b', name: 'Hearts' },
-  DIAMONDS: { symbol: '\u2666', color: '#b8860b', name: 'Diamonds' },
-  CLUBS: { symbol: '\u2663', color: '#1a5e3c', name: 'Clubs' },
-  SPADES: { symbol: '\u2660', color: '#1a5e3c', name: 'Spades' },
+  HEARTS: { symbol: '\u2665', color: '#dc2626', name: 'Hearts' },
+  DIAMONDS: { symbol: '\u2666', color: '#dc2626', name: 'Diamonds' },
+  CLUBS: { symbol: '\u2663', color: '#1a1a1a', name: 'Clubs' },
+  SPADES: { symbol: '\u2660', color: '#1a1a1a', name: 'Spades' },
 };
 
 const RANK_DISPLAY = {
@@ -23,7 +23,7 @@ const RANK_DISPLAY = {
   '2': '2',
 };
 
-const Card = ({ card, onClick, disabled, small, draggable, onDragStart, onDragEnd }) => {
+const Card = ({ card, onClick, disabled, small, medium, draggable, onDragStart, onDragEnd }) => {
   const suit = SUIT_CONFIG[card?.suit] || SUIT_CONFIG.SPADES;
   const rank = RANK_DISPLAY[card?.rank] || '?';
 
@@ -50,7 +50,7 @@ const Card = ({ card, onClick, disabled, small, draggable, onDragStart, onDragEn
       onDragEnd={handleDragEnd}
       className={`
         card-base
-        ${small ? 'w-[58px] h-[77px] sm:w-[68px] sm:h-[97px]' : 'w-[68px] h-[97px] sm:w-[77px] sm:h-[117px] md:w-[87px] md:h-[121px]'}
+        ${small ? 'w-[58px] h-[77px] sm:w-[68px] sm:h-[97px]' : medium ? 'w-[65px] h-[94px] sm:w-[74px] sm:h-[113px] md:w-[84px] md:h-[116px]' : 'w-[68px] h-[97px] sm:w-[77px] sm:h-[117px] md:w-[87px] md:h-[121px]'}
         ${isDraggable ? 'card-draggable' : ''}
         ${!disabled && onClick && !draggable ? 'card-playable' : ''}
         ${disabled ? 'card-disabled' : ''}
@@ -61,24 +61,24 @@ const Card = ({ card, onClick, disabled, small, draggable, onDragStart, onDragEn
       {/* Top left corner */}
       <div
         className="absolute top-2 left-2 flex flex-col items-center leading-none"
-        style={{ fontSize: small ? '14px' : '18px', fontWeight: 600 }}
+        style={{ fontSize: small ? '14px' : medium ? '17px' : '18px', fontWeight: 600 }}
       >
         <span>{rank}</span>
-        <span style={{ fontSize: small ? '12px' : '16px', marginTop: '1px' }}>{suit.symbol}</span>
+        <span style={{ fontSize: small ? '12px' : medium ? '15px' : '16px', marginTop: '1px' }}>{suit.symbol}</span>
       </div>
 
       {/* Center suit */}
       <div className="absolute inset-0 flex items-center justify-center">
-        <span style={{ fontSize: small ? '32px' : '48px' }}>{suit.symbol}</span>
+        <span style={{ fontSize: small ? '32px' : medium ? '44px' : '48px' }}>{suit.symbol}</span>
       </div>
 
       {/* Bottom right corner */}
       <div
         className="absolute bottom-2 right-2 flex flex-col items-center leading-none rotate-180"
-        style={{ fontSize: small ? '14px' : '18px', fontWeight: 600 }}
+        style={{ fontSize: small ? '14px' : medium ? '17px' : '18px', fontWeight: 600 }}
       >
         <span>{rank}</span>
-        <span style={{ fontSize: small ? '12px' : '16px', marginTop: '1px' }}>{suit.symbol}</span>
+        <span style={{ fontSize: small ? '12px' : medium ? '15px' : '16px', marginTop: '1px' }}>{suit.symbol}</span>
       </div>
     </div>
   );
@@ -105,18 +105,18 @@ export const CardBack = ({ small }) => {
         rounded-xl flex items-center justify-center overflow-hidden
       `}
       style={{
-        background: 'linear-gradient(135deg, #1a5e3c 0%, #0f3d28 100%)',
-        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.4), inset 0 0 0 3px #d4af37, inset 0 0 0 4px rgba(212, 175, 55, 0.3)'
+        background: 'linear-gradient(135deg, #2563eb 0%, #1e40af 100%)',
+        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.4), inset 0 0 0 2px rgba(255, 255, 255, 0.2)'
       }}
     >
       <div
         className="w-3/4 h-3/4 rounded-lg flex items-center justify-center"
         style={{
-          border: '2px solid rgba(212, 175, 55, 0.4)',
-          background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(212, 175, 55, 0.05) 100%)'
+          border: '2px solid rgba(255, 255, 255, 0.2)',
+          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)'
         }}
       >
-        <span style={{ color: 'rgba(212, 175, 55, 0.3)', fontSize: small ? '16px' : '24px' }}>♠♥♦♣</span>
+        <span style={{ color: 'rgba(255, 255, 255, 0.3)', fontSize: small ? '16px' : '24px' }}>♠♥♦♣</span>
       </div>
     </div>
   );

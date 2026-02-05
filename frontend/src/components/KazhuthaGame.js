@@ -339,7 +339,7 @@ const KazhuthaGame = () => {
 
   // Sort hand by suit then by value
   const sortedHand = [...(gameData?.your_hand || [])].sort((a, b) => {
-    const suitOrder = { SPADES: 0, HEARTS: 1, DIAMONDS: 2, CLUBS: 3 };
+    const suitOrder = { SPADES: 0, HEARTS: 1, CLUBS: 2, DIAMONDS: 3 };
     if (suitOrder[a.suit] !== suitOrder[b.suit]) {
       return suitOrder[a.suit] - suitOrder[b.suit];
     }
@@ -636,7 +636,7 @@ const KazhuthaGame = () => {
             <div className="flex flex-wrap gap-3 justify-center items-end">
               {displayedPile.map((play, index) => (
                 <div key={index} className="flex flex-col items-center">
-                  <Card card={play.card} small />
+                  <Card card={play.card} medium />
                   <span className={`text-[10px] sm:text-xs mt-1 ${
                     resolvedInfo?.winner === play.player ? 'text-amber-400 font-bold' : 'text-white/60'
                   }`}>{play.player}</span>
@@ -658,7 +658,7 @@ const KazhuthaGame = () => {
             </div>
             <div className="flex flex-wrap gap-2 justify-center max-h-[545px] overflow-y-auto">
               {takenHandDisplay.cards.map((card, idx) => (
-                <Card key={`taken-${card.suit}-${card.rank}-${idx}`} card={card} small />
+                <Card key={`taken-${card.suit}-${card.rank}-${idx}`} card={card} medium />
               ))}
             </div>
           </div>
