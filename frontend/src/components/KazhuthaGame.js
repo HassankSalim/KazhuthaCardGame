@@ -178,6 +178,12 @@ const KazhuthaGame = () => {
             setGameData(data.game_state);
             setNotification(`${data.player_name} disconnected`);
             break;
+          case 'player_reconnected':
+            setGameData(data.game_state);
+            if (data.player_name !== playerName) {
+              setNotification(`${data.player_name} reconnected!`);
+            }
+            break;
           default:
             break;
         }
@@ -256,7 +262,12 @@ const KazhuthaGame = () => {
       const data = await response.json();
       if (!response.ok) throw new Error(data.detail || 'Failed to join game');
       setGameId(joinCode.trim().toUpperCase());
-      setScreen('lobby');
+      if (data.rejoined) {
+        setScreen('playing');
+        setNotification('Reconnected to game!');
+      } else {
+        setScreen('lobby');
+      }
     } catch (err) {
       setError(err.message);
     }
@@ -482,6 +493,26 @@ const KazhuthaGame = () => {
   // Playing/Finished Screen
   return (
     <div className="min-h-screen flex flex-col p-4 max-w-5xl mx-auto">
+      {/* Game Code Badge - Top Right */}
+      <div className="fixed top-4 right-4 z-40">
+        <div className="game-card px-3 py-2 flex items-center gap-2">
+          <span className="text-white/50 text-xs">Code:</span>
+          <span className="font-mono text-sm text-emerald-400 tracking-wider">{gameId}</span>
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(gameId);
+              setNotification('Game code copied!');
+            }}
+            className="p-1 text-white/40 hover:text-white rounded transition-colors"
+            title="Copy game code"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
       {/* Game Over Modal */}
       {screen === 'finished' && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
@@ -514,6 +545,7 @@ const KazhuthaGame = () => {
             {gameData?.players?.map((player) => {
               const isCurrentPlayer = player.name === gameData.current_player;
               const isYou = player.name === playerName;
+              const isDisconnected = !player.is_connected && gameData?.game_state === 'PLAYING';
 
               return (
                 <div key={player.name} className="relative pt-1 pb-2">
@@ -524,10 +556,11 @@ const KazhuthaGame = () => {
                     </div>
                   )}
 
-                  <div className={`player-card ${isCurrentPlayer ? 'player-card-active' : ''}`}>
+                  <div className={`player-card ${isCurrentPlayer ? 'player-card-active' : ''} ${isDisconnected ? 'opacity-50' : ''}`}>
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
                       player.is_winner ? 'bg-amber-500/30 text-amber-400' :
                       player.is_kazhutha ? 'bg-red-500/30 text-red-400' :
+                      isDisconnected ? 'bg-red-500/20 text-red-400' :
                       isYou ? 'bg-emerald-500/30 text-emerald-400' :
                       'bg-white/10 text-white/70'
                     }`}>
@@ -537,6 +570,7 @@ const KazhuthaGame = () => {
                       <div className="text-white text-sm font-medium">
                         {player.name}
                         {isYou && <span className="text-emerald-400"> (You)</span>}
+                        {isDisconnected && <span className="text-red-400 text-xs ml-1">(Disconnected)</span>}
                       </div>
                       <div className="text-white/50 text-xs">
                         {player.is_winner ? 'Won!' : player.is_kazhutha ? 'Kazhutha!' : `${player.card_count} cards`}
@@ -559,6 +593,13 @@ const KazhuthaGame = () => {
           <SuitIndicator suit={gameData?.current_suit} />
         </div>
       </div>
+
+      {/* Waiting for Disconnected Player */}
+      {gameData?.waiting_for_player && (
+        <div className="bg-amber-500/20 border border-amber-500/50 rounded-lg p-4 mb-4 text-center">
+          <span className="text-amber-300">Waiting for {gameData.waiting_for_player} to reconnect...</span>
+        </div>
+      )}
 
       {/* Take Hand Button (Special Rule) */}
       {gameData?.can_take_from_left && !gameData?.round_in_progress && (
