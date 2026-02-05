@@ -572,7 +572,7 @@ const KazhuthaGame = () => {
 
       {/* Play Area - Drop Zone */}
       <div
-        className={`play-area drop-zone p-4 sm:p-6 mb-4 min-h-[120px] sm:min-h-[140px] flex flex-col items-center justify-center ${isDragOver ? 'drop-zone-active' : ''}`}
+        className={`play-area drop-zone p-4 sm:p-6 mb-4 min-h-[327px] sm:min-h-[381px] flex flex-col items-center justify-center ${isDragOver ? 'drop-zone-active' : ''}`}
         onDragOver={(e) => {
           e.preventDefault();
           e.dataTransfer.dropEffect = 'move';
@@ -615,7 +615,7 @@ const KazhuthaGame = () => {
             <div className="text-amber-400 font-bold text-sm mb-3">
               {takenHandDisplay.by} took {takenHandDisplay.from}'s hand! ({takenHandDisplay.cards.length} cards)
             </div>
-            <div className="flex flex-wrap gap-2 justify-center max-h-[200px] overflow-y-auto">
+            <div className="flex flex-wrap gap-2 justify-center max-h-[545px] overflow-y-auto">
               {takenHandDisplay.cards.map((card, idx) => (
                 <Card key={`taken-${card.suit}-${card.rank}-${idx}`} card={card} small />
               ))}

@@ -50,7 +50,7 @@ const Card = ({ card, onClick, disabled, small, draggable, onDragStart, onDragEn
       onDragEnd={handleDragEnd}
       className={`
         card-base
-        ${small ? 'w-12 h-16 sm:w-14 sm:h-20' : 'w-14 h-20 sm:w-16 sm:h-24 md:w-[72px] md:h-[100px]'}
+        ${small ? 'w-[58px] h-[77px] sm:w-[68px] sm:h-[97px]' : 'w-[68px] h-[97px] sm:w-[77px] sm:h-[117px] md:w-[87px] md:h-[121px]'}
         ${isDraggable ? 'card-draggable' : ''}
         ${!disabled && onClick && !draggable ? 'card-playable' : ''}
         ${disabled ? 'card-disabled' : ''}
@@ -61,24 +61,24 @@ const Card = ({ card, onClick, disabled, small, draggable, onDragStart, onDragEn
       {/* Top left corner */}
       <div
         className="absolute top-1 left-1 flex flex-col items-center leading-none"
-        style={{ fontSize: small ? '10px' : '12px' }}
+        style={{ fontSize: small ? '12px' : '14px' }}
       >
         <span className="font-bold">{rank}</span>
-        <span style={{ fontSize: small ? '8px' : '10px', marginTop: '-1px' }}>{suit.symbol}</span>
+        <span style={{ fontSize: small ? '10px' : '12px', marginTop: '-1px' }}>{suit.symbol}</span>
       </div>
 
       {/* Center suit */}
       <div className="absolute inset-0 flex items-center justify-center">
-        <span style={{ fontSize: small ? '20px' : '28px' }}>{suit.symbol}</span>
+        <span style={{ fontSize: small ? '24px' : '34px' }}>{suit.symbol}</span>
       </div>
 
       {/* Bottom right corner */}
       <div
         className="absolute bottom-1 right-1 flex flex-col items-center leading-none rotate-180"
-        style={{ fontSize: small ? '10px' : '12px' }}
+        style={{ fontSize: small ? '12px' : '14px' }}
       >
         <span className="font-bold">{rank}</span>
-        <span style={{ fontSize: small ? '8px' : '10px', marginTop: '-1px' }}>{suit.symbol}</span>
+        <span style={{ fontSize: small ? '10px' : '12px', marginTop: '-1px' }}>{suit.symbol}</span>
       </div>
     </div>
   );
@@ -100,7 +100,7 @@ export const SuitIndicator = ({ suit }) => {
 export const CardBack = ({ small }) => {
   return (
     <div className={`
-      ${small ? 'w-12 h-16 sm:w-14 sm:h-20' : 'w-14 h-20 sm:w-16 sm:h-24 md:w-[72px] md:h-[100px]'}
+      ${small ? 'w-[58px] h-[77px] sm:w-[68px] sm:h-[97px]' : 'w-[68px] h-[97px] sm:w-[77px] sm:h-[117px] md:w-[87px] md:h-[121px]'}
       rounded-lg bg-gradient-to-br from-blue-800 to-blue-900 border-2 border-blue-600
       flex items-center justify-center
     `}>
