@@ -1,10 +1,10 @@
 import React from 'react';
 
 const SUIT_CONFIG = {
-  HEARTS: { symbol: '\u2665', color: '#dc2626', name: 'Hearts' },
-  DIAMONDS: { symbol: '\u2666', color: '#dc2626', name: 'Diamonds' },
-  CLUBS: { symbol: '\u2663', color: '#1f2937', name: 'Clubs' },
-  SPADES: { symbol: '\u2660', color: '#1f2937', name: 'Spades' },
+  HEARTS: { symbol: '\u2665', color: '#b8860b', name: 'Hearts' },
+  DIAMONDS: { symbol: '\u2666', color: '#b8860b', name: 'Diamonds' },
+  CLUBS: { symbol: '\u2663', color: '#1a5e3c', name: 'Clubs' },
+  SPADES: { symbol: '\u2660', color: '#1a5e3c', name: 'Spades' },
 };
 
 const RANK_DISPLAY = {
@@ -60,25 +60,25 @@ const Card = ({ card, onClick, disabled, small, draggable, onDragStart, onDragEn
     >
       {/* Top left corner */}
       <div
-        className="absolute top-1 left-1 flex flex-col items-center leading-none"
-        style={{ fontSize: small ? '12px' : '14px' }}
+        className="absolute top-2 left-2 flex flex-col items-center leading-none"
+        style={{ fontSize: small ? '14px' : '18px', fontWeight: 600 }}
       >
-        <span className="font-bold">{rank}</span>
-        <span style={{ fontSize: small ? '10px' : '12px', marginTop: '-1px' }}>{suit.symbol}</span>
+        <span>{rank}</span>
+        <span style={{ fontSize: small ? '12px' : '16px', marginTop: '1px' }}>{suit.symbol}</span>
       </div>
 
       {/* Center suit */}
       <div className="absolute inset-0 flex items-center justify-center">
-        <span style={{ fontSize: small ? '24px' : '34px' }}>{suit.symbol}</span>
+        <span style={{ fontSize: small ? '32px' : '48px' }}>{suit.symbol}</span>
       </div>
 
       {/* Bottom right corner */}
       <div
-        className="absolute bottom-1 right-1 flex flex-col items-center leading-none rotate-180"
-        style={{ fontSize: small ? '12px' : '14px' }}
+        className="absolute bottom-2 right-2 flex flex-col items-center leading-none rotate-180"
+        style={{ fontSize: small ? '14px' : '18px', fontWeight: 600 }}
       >
-        <span className="font-bold">{rank}</span>
-        <span style={{ fontSize: small ? '10px' : '12px', marginTop: '-1px' }}>{suit.symbol}</span>
+        <span>{rank}</span>
+        <span style={{ fontSize: small ? '12px' : '16px', marginTop: '1px' }}>{suit.symbol}</span>
       </div>
     </div>
   );
@@ -99,12 +99,25 @@ export const SuitIndicator = ({ suit }) => {
 
 export const CardBack = ({ small }) => {
   return (
-    <div className={`
-      ${small ? 'w-[58px] h-[77px] sm:w-[68px] sm:h-[97px]' : 'w-[68px] h-[97px] sm:w-[77px] sm:h-[117px] md:w-[87px] md:h-[121px]'}
-      rounded-lg bg-gradient-to-br from-blue-800 to-blue-900 border-2 border-blue-600
-      flex items-center justify-center
-    `}>
-      <div className="w-3/4 h-3/4 rounded border border-blue-400/50 bg-blue-700/30" />
+    <div
+      className={`
+        ${small ? 'w-[58px] h-[77px] sm:w-[68px] sm:h-[97px]' : 'w-[68px] h-[97px] sm:w-[77px] sm:h-[117px] md:w-[87px] md:h-[121px]'}
+        rounded-xl flex items-center justify-center overflow-hidden
+      `}
+      style={{
+        background: 'linear-gradient(135deg, #1a5e3c 0%, #0f3d28 100%)',
+        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.4), inset 0 0 0 3px #d4af37, inset 0 0 0 4px rgba(212, 175, 55, 0.3)'
+      }}
+    >
+      <div
+        className="w-3/4 h-3/4 rounded-lg flex items-center justify-center"
+        style={{
+          border: '2px solid rgba(212, 175, 55, 0.4)',
+          background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(212, 175, 55, 0.05) 100%)'
+        }}
+      >
+        <span style={{ color: 'rgba(212, 175, 55, 0.3)', fontSize: small ? '16px' : '24px' }}>♠♥♦♣</span>
+      </div>
     </div>
   );
 };
