@@ -826,7 +826,7 @@ async def websocket_endpoint(websocket: WebSocket, game_id: str, player_name: st
                 await manager.disconnect(game_id, player_name)
                 break
 
-    except WebSocketDisconnect:
+    except (WebSocketDisconnect, RuntimeError):
         await manager.disconnect(game_id, player_name)
         if game_id in games:
             game = games[game_id]

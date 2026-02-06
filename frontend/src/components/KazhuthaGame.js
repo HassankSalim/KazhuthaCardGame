@@ -33,6 +33,7 @@ const KazhuthaGame = () => {
   const reconnectTimeoutRef = useRef(null);
   const resolvedPileTimeoutRef = useRef(null);
   const takenHandTimeoutRef = useRef(null);
+  const screenRef = useRef('welcome');
 
   useEffect(() => {
     if (error) {
@@ -47,6 +48,11 @@ const KazhuthaGame = () => {
       return () => clearTimeout(timer);
     }
   }, [notification]);
+
+  // Keep screenRef in sync with screen state (used by WS onclose handler)
+  useEffect(() => {
+    screenRef.current = screen;
+  }, [screen]);
 
   // Handle displaying resolved pile with timeout
   useEffect(() => {
@@ -210,7 +216,7 @@ const KazhuthaGame = () => {
 
     ws.onclose = () => {
       setIsConnecting(false);
-      if (screen === 'playing' || screen === 'lobby') {
+      if (screenRef.current !== 'welcome') {
         reconnectTimeoutRef.current = setTimeout(connectWebSocket, 3000);
       }
     };
@@ -221,17 +227,23 @@ const KazhuthaGame = () => {
     };
 
     wsRef.current = ws;
-  }, [gameId, playerName, screen]);
+  }, [gameId, playerName]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (gameId && playerName && (screen === 'lobby' || screen === 'playing')) {
+    if (gameId && playerName && screen !== 'welcome') {
       connectWebSocket();
     }
     return () => {
       if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
-      if (wsRef.current) wsRef.current.close();
     };
   }, [connectWebSocket, gameId, playerName, screen]);
+
+  // Clean up WebSocket on unmount only
+  useEffect(() => {
+    return () => {
+      if (wsRef.current) wsRef.current.close();
+    };
+  }, []);
 
   const createGame = async () => {
     if (!playerName.trim()) {
@@ -331,6 +343,7 @@ const KazhuthaGame = () => {
   };
 
   const resetGame = () => {
+    screenRef.current = 'welcome';
     if (wsRef.current) wsRef.current.close();
     if (resolvedPileTimeoutRef.current) clearTimeout(resolvedPileTimeoutRef.current);
     if (takenHandTimeoutRef.current) clearTimeout(takenHandTimeoutRef.current);
