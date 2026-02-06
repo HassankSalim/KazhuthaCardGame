@@ -832,8 +832,8 @@ async def websocket_endpoint(websocket: WebSocket, game_id: str, player_name: st
             game = games[game_id]
             game.remove_player(player_name)
 
-            # If host leaves while game is finished, notify everyone to go back to welcome
-            if game.finished and player_name == game.host_name:
+            # If host leaves while in lobby or game is finished, notify everyone to go back to welcome
+            if player_name == game.host_name and (not game.game_started or game.finished):
                 await manager.broadcast_to_game(game_id, {
                     "type": "host_left",
                     "player_name": player_name
