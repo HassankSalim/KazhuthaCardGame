@@ -80,6 +80,10 @@ class TakeHandRequest(BaseModel):
     game_id: str
     player_name: str
 
+class PlayAgainRequest(BaseModel):
+    game_id: str
+    player_name: str
+
 # WebSocket Manager
 class ConnectionManager:
     def __init__(self):
@@ -261,6 +265,34 @@ class GameSession:
         if self.waiting_for_player == player_name:
             self.current_player_idx = self.active_players.index(player_name)
             self.waiting_for_player = None
+
+    def reset_game(self):
+        """Reset game state back to lobby, keeping players and host."""
+        # Reset player hands to empty
+        for name in list(self.players.keys()):
+            self.players[name] = []
+        # Reset all game state
+        self.active_players = []
+        self.current_player_idx = 0
+        self.current_pile = []
+        self.current_suit = None
+        self.original_suit = None
+        self.game_started = False
+        self.finished = False
+        self.kazhutha = None
+        self.winners = []
+        self.discarded_cards = []
+        self.round_in_progress = False
+        self.last_action = None
+        self.game_first_card_played = False
+        self.resolved_pile = []
+        self.resolved_winner = None
+        self.suit_was_broken = False
+        self.taken_hand_cards = []
+        self.taken_hand_from = None
+        self.taken_hand_by = None
+        self.original_players = []
+        self.waiting_for_player = None
 
     def start_game(self):
         if len(self.players) < 2:
@@ -676,6 +708,26 @@ async def start_game(request: StartGameRequest):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+@app.post("/api/game/play-again")
+async def play_again(request: PlayAgainRequest):
+    game_id = request.game_id.upper().strip()
+
+    if game_id not in games:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    game = games[game_id]
+    if not game.finished:
+        raise HTTPException(status_code=400, detail="Game is not finished")
+    if game.host_name != request.player_name:
+        raise HTTPException(status_code=403, detail="Only host can start play again")
+
+    game.reset_game()
+    await manager.broadcast_to_game(game_id, {
+        "type": "game_reset",
+        "game_state": game.get_state()
+    })
+    return {"success": True}
+
 @app.post("/api/game/play")
 async def play_card(request: PlayCardRequest):
     game_id = request.game_id.upper().strip()
@@ -774,15 +826,24 @@ async def websocket_endpoint(websocket: WebSocket, game_id: str, player_name: st
                 await manager.disconnect(game_id, player_name)
                 break
 
-    except WebSocketDisconnect:
+    except (WebSocketDisconnect, RuntimeError):
         await manager.disconnect(game_id, player_name)
         if game_id in games:
-            games[game_id].remove_player(player_name)
-            await manager.broadcast_to_game(game_id, {
-                "type": "player_disconnected",
-                "player_name": player_name,
-                "game_state": games[game_id].get_state()
-            })
+            game = games[game_id]
+            game.remove_player(player_name)
+
+            # If host leaves while in lobby or game is finished, notify everyone to go back to welcome
+            if player_name == game.host_name and (not game.game_started or game.finished):
+                await manager.broadcast_to_game(game_id, {
+                    "type": "host_left",
+                    "player_name": player_name
+                })
+            else:
+                await manager.broadcast_to_game(game_id, {
+                    "type": "player_disconnected",
+                    "player_name": player_name,
+                    "game_state": game.get_state()
+                })
 
 # Serve static files (React build)
 static_dir = os.path.join(os.path.dirname(__file__), "frontend", "build")
