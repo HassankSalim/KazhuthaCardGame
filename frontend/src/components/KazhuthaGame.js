@@ -33,6 +33,7 @@ const KazhuthaGame = () => {
   const reconnectTimeoutRef = useRef(null);
   const resolvedPileTimeoutRef = useRef(null);
   const takenHandTimeoutRef = useRef(null);
+  const screenRef = useRef('welcome');
 
   useEffect(() => {
     if (error) {
@@ -47,6 +48,11 @@ const KazhuthaGame = () => {
       return () => clearTimeout(timer);
     }
   }, [notification]);
+
+  // Keep screenRef in sync with screen state (used by WS onclose handler)
+  useEffect(() => {
+    screenRef.current = screen;
+  }, [screen]);
 
   // Handle displaying resolved pile with timeout
   useEffect(() => {
@@ -184,6 +190,18 @@ const KazhuthaGame = () => {
               setNotification(`${data.player_name} reconnected!`);
             }
             break;
+          case 'game_reset':
+            setGameData(data.game_state);
+            setDisplayedPile(null);
+            setResolvedInfo(null);
+            setTakenHandDisplay(null);
+            setScreen('lobby');
+            setNotification('Back to lobby!');
+            break;
+          case 'host_left':
+            resetGame();
+            setNotification('Host has left the game');
+            break;
           default:
             break;
         }
@@ -198,7 +216,7 @@ const KazhuthaGame = () => {
 
     ws.onclose = () => {
       setIsConnecting(false);
-      if (screen === 'playing' || screen === 'lobby') {
+      if (screenRef.current !== 'welcome') {
         reconnectTimeoutRef.current = setTimeout(connectWebSocket, 3000);
       }
     };
@@ -209,17 +227,23 @@ const KazhuthaGame = () => {
     };
 
     wsRef.current = ws;
-  }, [gameId, playerName, screen]);
+  }, [gameId, playerName]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (gameId && playerName && (screen === 'lobby' || screen === 'playing')) {
+    if (gameId && playerName && screen !== 'welcome') {
       connectWebSocket();
     }
     return () => {
       if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
-      if (wsRef.current) wsRef.current.close();
     };
   }, [connectWebSocket, gameId, playerName, screen]);
+
+  // Clean up WebSocket on unmount only
+  useEffect(() => {
+    return () => {
+      if (wsRef.current) wsRef.current.close();
+    };
+  }, []);
 
   const createGame = async () => {
     if (!playerName.trim()) {
@@ -319,6 +343,7 @@ const KazhuthaGame = () => {
   };
 
   const resetGame = () => {
+    screenRef.current = 'welcome';
     if (wsRef.current) wsRef.current.close();
     if (resolvedPileTimeoutRef.current) clearTimeout(resolvedPileTimeoutRef.current);
     if (takenHandTimeoutRef.current) clearTimeout(takenHandTimeoutRef.current);
@@ -331,6 +356,20 @@ const KazhuthaGame = () => {
     setScreen('welcome');
     setError('');
     setNotification('');
+  };
+
+  const playAgain = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/game/play-again`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ game_id: gameId, player_name: playerName }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || 'Failed to restart game');
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   const isMyTurn = gameData?.current_player === playerName;
@@ -530,9 +569,25 @@ const KazhuthaGame = () => {
                 <p className="text-white/50 mt-2">{gameData?.kazhutha} is the Kazhutha</p>
               </div>
             )}
-            <button onClick={resetGame} className="btn-primary">
-              Play Again
-            </button>
+            {isHost ? (
+              <div className="space-y-3">
+                <button onClick={playAgain} className="btn-primary w-full">
+                  Play Again
+                </button>
+                <button onClick={resetGame} className="w-full text-white/40 hover:text-white/70 text-sm transition-colors">
+                  Leave Game
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="text-white/40 py-2 text-sm">
+                  Waiting for host to play again...
+                </div>
+                <button onClick={resetGame} className="w-full text-white/40 hover:text-white/70 text-sm transition-colors">
+                  Leave Game
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
