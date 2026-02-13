@@ -23,7 +23,7 @@ const RANK_DISPLAY = {
   '2': '2',
 };
 
-const Card = ({ card, onClick, disabled, small, medium, draggable, onDragStart, onDragEnd }) => {
+const Card = ({ card, onClick, disabled, small, medium, draggable, onDragStart, onDragEnd, selected }) => {
   const suit = SUIT_CONFIG[card?.suit] || SUIT_CONFIG.SPADES;
   const rank = RANK_DISPLAY[card?.rank] || '?';
 
@@ -54,31 +54,32 @@ const Card = ({ card, onClick, disabled, small, medium, draggable, onDragStart, 
         ${isDraggable ? 'card-draggable' : ''}
         ${!disabled && onClick && !draggable ? 'card-playable' : ''}
         ${disabled ? 'card-disabled' : ''}
+        ${selected ? 'card-selected' : ''}
         select-none relative
       `}
       style={{ color: suit.color }}
     >
       {/* Top left corner */}
       <div
-        className="absolute top-2 left-2 flex flex-col items-center leading-none"
-        style={{ fontSize: small ? '14px' : medium ? '17px' : '18px', fontWeight: 600 }}
+        className={`absolute flex flex-col items-center ${small ? 'top-1 left-1 gap-0.5' : 'top-1.5 left-1.5 gap-1'}`}
+        style={{ fontSize: small ? '11px' : medium ? '17px' : '18px', fontWeight: 600, lineHeight: 1 }}
       >
         <span>{rank}</span>
-        <span style={{ fontSize: small ? '12px' : medium ? '15px' : '16px', marginTop: '1px' }}>{suit.symbol}</span>
+        <span style={{ fontSize: small ? '10px' : medium ? '14px' : '15px' }}>{suit.symbol}</span>
       </div>
 
       {/* Center suit */}
       <div className="absolute inset-0 flex items-center justify-center">
-        <span style={{ fontSize: small ? '32px' : medium ? '44px' : '48px' }}>{suit.symbol}</span>
+        <span style={{ fontSize: small ? '22px' : medium ? '36px' : '40px', opacity: 0.8 }}>{suit.symbol}</span>
       </div>
 
       {/* Bottom right corner */}
       <div
-        className="absolute bottom-2 right-2 flex flex-col items-center leading-none rotate-180"
-        style={{ fontSize: small ? '14px' : medium ? '17px' : '18px', fontWeight: 600 }}
+        className={`absolute flex flex-col items-center rotate-180 ${small ? 'bottom-1 right-1 gap-0.5' : 'bottom-1.5 right-1.5 gap-1'}`}
+        style={{ fontSize: small ? '11px' : medium ? '17px' : '18px', fontWeight: 600, lineHeight: 1 }}
       >
         <span>{rank}</span>
-        <span style={{ fontSize: small ? '12px' : medium ? '15px' : '16px', marginTop: '1px' }}>{suit.symbol}</span>
+        <span style={{ fontSize: small ? '10px' : medium ? '14px' : '15px' }}>{suit.symbol}</span>
       </div>
     </div>
   );

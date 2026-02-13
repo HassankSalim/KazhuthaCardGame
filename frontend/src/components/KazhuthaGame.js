@@ -15,6 +15,9 @@ const CrownIcon = () => (
   </svg>
 );
 
+// Detect primary pointer type: fine = mouse/trackpad, coarse = touchscreen
+const hasFinePointer = window.matchMedia('(pointer: fine)').matches;
+
 const KazhuthaGame = () => {
   const [screen, setScreen] = useState('welcome');
   const [gameId, setGameId] = useState('');
@@ -22,13 +25,14 @@ const KazhuthaGame = () => {
   const [gameData, setGameData] = useState(null);
   const [error, setError] = useState('');
   const [notification, setNotification] = useState('');
-  const [isConnecting, setIsConnecting] = useState(false);
   const [joinCode, setJoinCode] = useState('');
   const [displayedPile, setDisplayedPile] = useState(null); // For showing resolved pile
   const [resolvedInfo, setResolvedInfo] = useState(null); // Winner info for resolved pile
   const [takenHandDisplay, setTakenHandDisplay] = useState(null); // For showing taken hand cards
   const [draggedCard, setDraggedCard] = useState(null); // Card being dragged
   const [isDragOver, setIsDragOver] = useState(false); // Whether dragging over drop zone
+  const [selectedCard, setSelectedCard] = useState(null); // Card selected by tap (mobile)
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
   const resolvedPileTimeoutRef = useRef(null);
@@ -117,15 +121,29 @@ const KazhuthaGame = () => {
     };
   }, [gameData?.taken_hand_cards, gameData?.taken_hand_from, gameData?.taken_hand_by]);
 
+  // Track viewport width for mobile layout
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Clear selected card when turn changes
+  useEffect(() => {
+    setSelectedCard(null);
+  }, [gameData?.current_player]);
+
+  const isCardEqual = (a, b) => a && b && a.suit === b.suit && a.rank === b.rank;
+
   const connectWebSocket = useCallback(() => {
     if (!gameId || !playerName) return;
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
-    setIsConnecting(true);
+
     const ws = new WebSocket(`${WS_URL}/ws/${gameId}/${playerName}`);
 
     ws.onopen = () => {
-      setIsConnecting(false);
+
       setError('');
     };
 
@@ -197,14 +215,14 @@ const KazhuthaGame = () => {
     };
 
     ws.onclose = () => {
-      setIsConnecting(false);
+
       if (screen === 'playing' || screen === 'lobby') {
         reconnectTimeoutRef.current = setTimeout(connectWebSocket, 3000);
       }
     };
 
     ws.onerror = () => {
-      setIsConnecting(false);
+
       setError('Connection error');
     };
 
@@ -353,8 +371,8 @@ const KazhuthaGame = () => {
     const hasName = playerName.trim().length > 0;
 
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="game-card w-full max-w-md p-8">
+      <div className="flex items-center justify-center p-4" style={{ minHeight: 'var(--app-height, 100vh)' }}>
+        <div className="game-card w-full max-w-md p-6 sm:p-8">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-white mb-2">Kazhutha</h1>
             <p className="text-white/50">A classic card game</p>
@@ -410,8 +428,8 @@ const KazhuthaGame = () => {
   // Lobby Screen
   if (screen === 'lobby') {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="game-card w-full max-w-md p-8">
+      <div className="flex items-center justify-center p-4" style={{ minHeight: 'var(--app-height, 100vh)' }}>
+        <div className="game-card w-full max-w-md p-6 sm:p-8">
           <div className="text-center mb-6">
             <h2 className="text-2xl font-bold text-white mb-2">Game Lobby</h2>
             <div className="flex items-center justify-center gap-2">
@@ -492,21 +510,21 @@ const KazhuthaGame = () => {
 
   // Playing/Finished Screen
   return (
-    <div className="min-h-screen flex flex-col p-4 max-w-5xl mx-auto">
-      {/* Game Code Badge - Top Right */}
-      <div className="fixed top-4 right-4 z-40">
-        <div className="game-card px-3 py-2 flex items-center gap-2">
-          <span className="text-white/50 text-xs">Code:</span>
-          <span className="font-mono text-sm text-emerald-400 tracking-wider">{gameId}</span>
+    <div className="flex flex-col p-2 sm:p-4 max-w-5xl mx-auto" style={{ minHeight: 'var(--app-height, 100vh)' }}>
+      {/* Game Code Badge - inline on mobile, fixed on desktop */}
+      <div className={`${isMobile ? 'flex justify-end mb-2' : 'fixed top-4 right-4'} z-40`}>
+        <div className="game-card px-2.5 py-1.5 sm:px-3 sm:py-2 flex items-center gap-1.5 sm:gap-2">
+          <span className="text-white/50 text-[10px] sm:text-xs">Code:</span>
+          <span className="font-mono text-xs sm:text-sm text-emerald-400 tracking-wider">{gameId}</span>
           <button
             onClick={() => {
               navigator.clipboard.writeText(gameId);
               setNotification('Game code copied!');
             }}
-            className="p-1 text-white/40 hover:text-white rounded transition-colors"
+            className="p-0.5 sm:p-1 text-white/40 hover:text-white rounded transition-colors"
             title="Copy game code"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
           </button>
@@ -538,17 +556,17 @@ const KazhuthaGame = () => {
       )}
 
       {/* Player Bar */}
-      <div className="game-card p-4 mb-4">
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Players */}
-          <div className="flex flex-wrap gap-3 flex-1">
+      <div className="game-card p-2 sm:p-4 mb-2 sm:mb-4">
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Players - horizontal scroll on mobile, wrap on desktop */}
+          <div className="flex gap-2 sm:gap-3 flex-1 overflow-x-auto sm:flex-wrap scrollbar-hide pb-1">
             {gameData?.players?.map((player) => {
               const isCurrentPlayer = player.name === gameData.current_player;
               const isYou = player.name === playerName;
               const isDisconnected = !player.is_connected && gameData?.game_state === 'PLAYING';
 
               return (
-                <div key={player.name} className="relative pt-1 pb-2">
+                <div key={player.name} className="relative pt-1 pb-2 flex-shrink-0">
                   {/* Crown for host - top left */}
                   {player.is_host && (
                     <div className="absolute -top-1 -left-1 z-10">
@@ -557,7 +575,7 @@ const KazhuthaGame = () => {
                   )}
 
                   <div className={`player-card ${isCurrentPlayer ? 'player-card-active' : ''} ${isDisconnected ? 'opacity-50' : ''}`}>
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                    <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold ${
                       player.is_winner ? 'bg-amber-500/30 text-amber-400' :
                       player.is_kazhutha ? 'bg-red-500/30 text-red-400' :
                       isDisconnected ? 'bg-red-500/20 text-red-400' :
@@ -567,12 +585,12 @@ const KazhuthaGame = () => {
                       {player.name.charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <div className="text-white text-sm font-medium">
+                      <div className="text-white text-xs sm:text-sm font-medium whitespace-nowrap">
                         {player.name}
-                        {isYou && <span className="text-emerald-400"> (You)</span>}
-                        {isDisconnected && <span className="text-red-400 text-xs ml-1">(Disconnected)</span>}
+                        {isYou && <span className="text-emerald-400 text-xs"> (You)</span>}
+                        {isDisconnected && <span className="text-red-400 text-xs ml-1">(DC)</span>}
                       </div>
-                      <div className="text-white/50 text-xs">
+                      <div className="text-white/50 text-[10px] sm:text-xs">
                         {player.is_winner ? 'Won!' : player.is_kazhutha ? 'Kazhutha!' : `${player.card_count} cards`}
                       </div>
                     </div>
@@ -596,16 +614,16 @@ const KazhuthaGame = () => {
 
       {/* Waiting for Disconnected Player */}
       {gameData?.waiting_for_player && (
-        <div className="bg-amber-500/20 border border-amber-500/50 rounded-lg p-4 mb-4 text-center">
-          <span className="text-amber-300">Waiting for {gameData.waiting_for_player} to reconnect...</span>
+        <div className="bg-amber-500/20 border border-amber-500/50 rounded-lg p-3 sm:p-4 mb-2 sm:mb-4 text-center">
+          <span className="text-amber-300 text-xs sm:text-base">Waiting for {gameData.waiting_for_player} to reconnect...</span>
         </div>
       )}
 
       {/* Take Hand Button (Special Rule) */}
       {gameData?.can_take_from_left && !gameData?.round_in_progress && (
-        <div className="game-card p-3 mb-4 flex items-center justify-between">
-          <span className="text-white/70 text-sm">Special Rule: Take cards from player on your left</span>
-          <button onClick={takeHand} className="btn-warning text-sm">
+        <div className="game-card p-3 mb-2 sm:mb-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:justify-between">
+          <span className="text-white/70 text-xs sm:text-sm text-center sm:text-left">Special Rule: Take cards from player on your left</span>
+          <button onClick={takeHand} className="btn-warning text-sm whitespace-nowrap">
             Take {gameData.can_take_from_left}'s Hand
           </button>
         </div>
@@ -613,7 +631,13 @@ const KazhuthaGame = () => {
 
       {/* Play Area - Drop Zone */}
       <div
-        className={`play-area drop-zone p-4 sm:p-6 mb-4 min-h-[327px] sm:min-h-[381px] flex flex-col items-center justify-center ${isDragOver ? 'drop-zone-active' : ''}`}
+        className={`play-area drop-zone p-3 sm:p-6 mb-2 sm:mb-4 min-h-[180px] sm:min-h-[381px] flex flex-col items-center justify-center ${isDragOver ? 'drop-zone-active' : ''} ${selectedCard && isMyTurn ? 'drop-zone-ready' : ''}`}
+        onClick={() => {
+          if (selectedCard && isMyTurn) {
+            playCard(selectedCard);
+            setSelectedCard(null);
+          }
+        }}
         onDragOver={(e) => {
           e.preventDefault();
           e.dataTransfer.dropEffect = 'move';
@@ -633,10 +657,10 @@ const KazhuthaGame = () => {
       >
         {displayedPile?.length > 0 ? (
           <div className="flex flex-col items-center">
-            <div className="flex flex-wrap gap-3 justify-center items-end">
+            <div className="flex flex-wrap gap-2 sm:gap-3 justify-center items-end">
               {displayedPile.map((play, index) => (
                 <div key={index} className="flex flex-col items-center">
-                  <Card card={play.card} medium />
+                  <Card card={play.card} small={isMobile} medium={!isMobile} />
                   <span className={`text-[10px] sm:text-xs mt-1 ${
                     resolvedInfo?.winner === play.player ? 'text-amber-400 font-bold' : 'text-white/60'
                   }`}>{play.player}</span>
@@ -644,7 +668,7 @@ const KazhuthaGame = () => {
               ))}
             </div>
             {resolvedInfo && (
-              <div className={`mt-3 text-sm font-medium ${resolvedInfo.suitBroken ? 'text-red-400' : 'text-emerald-400'}`}>
+              <div className={`mt-2 sm:mt-3 text-xs sm:text-sm font-medium ${resolvedInfo.suitBroken ? 'text-red-400' : 'text-emerald-400'}`}>
                 {resolvedInfo.suitBroken
                   ? `${resolvedInfo.winner} picks up the pile!`
                   : `Cards discarded - ${resolvedInfo.winner} leads next!`}
@@ -653,38 +677,51 @@ const KazhuthaGame = () => {
           </div>
         ) : takenHandDisplay ? (
           <div className="flex flex-col items-center">
-            <div className="text-amber-400 font-bold text-sm mb-3">
+            <div className="text-amber-400 font-bold text-xs sm:text-sm mb-2 sm:mb-3">
               {takenHandDisplay.by} took {takenHandDisplay.from}'s hand! ({takenHandDisplay.cards.length} cards)
             </div>
-            <div className="flex flex-wrap gap-2 justify-center max-h-[545px] overflow-y-auto">
+            <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-center max-h-[200px] sm:max-h-[545px] overflow-y-auto">
               {takenHandDisplay.cards.map((card, idx) => (
-                <Card key={`taken-${card.suit}-${card.rank}-${idx}`} card={card} medium />
+                <Card key={`taken-${card.suit}-${card.rank}-${idx}`} card={card} small={isMobile} medium={!isMobile} />
               ))}
             </div>
           </div>
         ) : (
-          <div className="text-white/30 text-sm">
-            {isMyTurn ? 'Your turn - drag a card here to play' : `Waiting for ${gameData?.current_player}...`}
+          <div className="text-white/30 text-sm text-center">
+            {isMyTurn
+              ? (!hasFinePointer
+                  ? (selectedCard ? 'Tap here to play the selected card' : 'Tap a card to select it')
+                  : 'Your turn - drag a card here to play')
+              : `Waiting for ${gameData?.current_player}...`}
           </div>
         )}
       </div>
 
       {/* Your Hand */}
-      <div className="game-card p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-white font-medium">Your Hand</h3>
-          <span className="text-white/50 text-sm">{sortedHand.length} cards</span>
+      <div className="game-card p-3 sm:p-4 game-hand-area">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <h3 className="text-white font-medium text-sm sm:text-base">Your Hand</h3>
+          <span className="text-white/50 text-xs sm:text-sm">{sortedHand.length} cards</span>
         </div>
 
-        <div className="flex flex-wrap gap-2 justify-start">
+        <div className={`flex flex-wrap gap-1.5 sm:gap-2 justify-start ${isMobile ? 'max-h-[280px] overflow-y-auto' : ''}`}>
           {sortedHand.map((card, idx) => (
             <Card
               key={`${card.suit}-${card.rank}-${idx}`}
               card={card}
-              draggable={isMyTurn}
+              small={isMobile}
+              draggable={isMyTurn && hasFinePointer}
               onDragStart={(card) => setDraggedCard(card)}
               onDragEnd={() => setDraggedCard(null)}
+              onClick={isMyTurn ? () => {
+                if (isCardEqual(selectedCard, card)) {
+                  setSelectedCard(null);
+                } else {
+                  setSelectedCard(card);
+                }
+              } : undefined}
               disabled={!isMyTurn}
+              selected={isCardEqual(selectedCard, card)}
             />
           ))}
           {sortedHand.length === 0 && (
@@ -697,7 +734,7 @@ const KazhuthaGame = () => {
 
       {/* Notifications */}
       {notification && (
-        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
+        <div className="fixed left-1/2 transform -translate-x-1/2 z-50" style={{ bottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
           <div className="px-4 py-2 bg-emerald-600 text-white rounded-lg shadow-lg text-sm">
             {notification}
           </div>
@@ -705,7 +742,7 @@ const KazhuthaGame = () => {
       )}
 
       {error && (
-        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
+        <div className="fixed left-1/2 transform -translate-x-1/2 z-50" style={{ bottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
           <div className="px-4 py-2 bg-red-600 text-white rounded-lg shadow-lg text-sm">
             {error}
           </div>
