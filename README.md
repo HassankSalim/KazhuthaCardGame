@@ -68,6 +68,10 @@ Frontend:
 Kazhutha/
 ├── main.py              # FastAPI backend server
 ├── requirements.txt     # Python dependencies
+├── Dockerfile           # Multi-stage Docker build (Node.js + Python)
+├── render.yaml          # Render.com deployment config
+├── .dockerignore
+├── .gitignore
 ├── README.md
 └── frontend/
     ├── package.json
@@ -88,15 +92,30 @@ Kazhutha/
 
 ### REST
 - `POST /api/game/create` - Create a new game
-- `POST /api/game/join` - Join an existing game
+- `POST /api/game/join` - Join an existing game (also handles reconnection)
 - `POST /api/game/start` - Start the game (host only)
 - `POST /api/game/play` - Play a card
 - `POST /api/game/take-hand` - Take hand from player on left
+- `POST /api/game/play-again` - Reset game back to lobby (host only, after game ends)
 - `GET /api/game/{game_id}` - Get game state
 - `GET /api/healthz` - Health check
 
 ### WebSocket
 - `WS /ws/{game_id}/{player_name}` - Real-time game updates
+
+#### Message Types (Server → Client)
+| Type | Description |
+|------|-------------|
+| `connected` | Initial connection established |
+| `player_joined` | A player joined the lobby |
+| `player_reconnected` | A disconnected player reconnected |
+| `player_disconnected` | A player disconnected during game |
+| `game_started` | Game has started, cards dealt |
+| `card_played` | A player played a card |
+| `hand_taken` | A player took another player's hand |
+| `game_reset` | Game reset to lobby (play again) |
+| `host_left` | Host left the game |
+| `ping` | Keep-alive ping (client responds with `"pong"`) |
 
 ## Deployment
 
