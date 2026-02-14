@@ -3,7 +3,7 @@ import KazhuthaGame from './components/KazhuthaGame';
 
 function App() {
   return (
-    <div className="min-h-screen">
+    <div style={{ minHeight: 'var(--app-height, 100vh)' }}>
       <KazhuthaGame />
     </div>
   );
