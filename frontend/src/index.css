@@ -61,7 +61,13 @@ body {
   }
 
   .card-disabled {
-    @apply opacity-70 cursor-not-allowed;
+    @apply cursor-not-allowed relative;
+  }
+
+  .card-disabled::after {
+    content: '';
+    @apply absolute inset-0 rounded-xl pointer-events-none;
+    background: rgba(0, 0, 0, 0.15);
   }
 
   .card-selected {
