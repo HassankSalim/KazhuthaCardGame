@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Card, { SuitIndicator } from './Card';
 
 // In production (HTTPS), use the same host. In development, use localhost:8000
@@ -6,6 +6,12 @@ const IS_SECURE = window.location.protocol === 'https:';
 const SERVER_URL = IS_SECURE ? window.location.host : (process.env.REACT_APP_SERVER_URL || 'localhost:8000');
 const BACKEND_URL = `${IS_SECURE ? 'https' : 'http'}://${SERVER_URL}`;
 const WS_URL = `${IS_SECURE ? 'wss' : 'ws'}://${SERVER_URL}`;
+
+// Pre-computed style objects to avoid creating new objects on every render
+const DISPLAY_FONT_STYLE = { fontFamily: "'Playfair Display', serif" };
+const APP_HEIGHT_STYLE = { minHeight: 'var(--app-height, 100vh)' };
+const NOTIF_BOTTOM_STYLE = { bottom: 'max(3.5rem, calc(env(safe-area-inset-bottom) + 2.5rem))' };
+const ERROR_BOTTOM_STYLE = { bottom: 'max(1rem, env(safe-area-inset-bottom))' };
 
 // Crown icon for host player
 const CrownIcon = () => (
@@ -457,14 +463,16 @@ const KazhuthaGame = () => {
   const isHost = myPlayer?.is_host;
 
   // Sort hand by suit then by value
-  const sortedHand = [...(gameData?.your_hand || [])].sort((a, b) => {
-    const suitOrder = { SPADES: 0, HEARTS: 1, CLUBS: 2, DIAMONDS: 3 };
-    if (suitOrder[a.suit] !== suitOrder[b.suit]) {
-      return suitOrder[a.suit] - suitOrder[b.suit];
-    }
-    const rankOrder = { ACE: 14, KING: 13, QUEEN: 12, JACK: 11, '10': 10, '9': 9, '8': 8, '7': 7, '6': 6, '5': 5, '4': 4, '3': 3, '2': 2 };
-    return rankOrder[b.rank] - rankOrder[a.rank];
-  });
+  const sortedHand = useMemo(() => {
+    return [...(gameData?.your_hand || [])].sort((a, b) => {
+      const suitOrder = { SPADES: 0, HEARTS: 1, CLUBS: 2, DIAMONDS: 3 };
+      if (suitOrder[a.suit] !== suitOrder[b.suit]) {
+        return suitOrder[a.suit] - suitOrder[b.suit];
+      }
+      const rankOrder = { ACE: 14, KING: 13, QUEEN: 12, JACK: 11, '10': 10, '9': 9, '8': 8, '7': 7, '6': 6, '5': 5, '4': 4, '3': 3, '2': 2 };
+      return rankOrder[b.rank] - rankOrder[a.rank];
+    });
+  }, [gameData?.your_hand]);
 
   // Welcome Screen
   if (screen === 'welcome') {
@@ -472,10 +480,10 @@ const KazhuthaGame = () => {
     const hasName = playerName.trim().length > 0;
 
     return (
-      <main className="flex items-center justify-center p-4" style={{ minHeight: 'var(--app-height, 100vh)' }}>
+      <main className="flex items-center justify-center p-4" style={APP_HEIGHT_STYLE}>
         <div className="game-card w-full max-w-md p-6 sm:p-8">
           <div className="text-center mb-8">
-            <h1 className="text-5xl sm:text-6xl font-black text-white mb-3 tracking-tight" style={{ fontFamily: "'Playfair Display', serif" }}>Kazhutha</h1>
+            <h1 className="text-5xl sm:text-6xl font-black text-white mb-3 tracking-tight" style={DISPLAY_FONT_STYLE}>Kazhutha</h1>
             <p className="text-felt-muted text-sm tracking-widest uppercase">A classic card game</p>
           </div>
 
@@ -531,10 +539,10 @@ const KazhuthaGame = () => {
   // Lobby Screen
   if (screen === 'lobby') {
     return (
-      <main className="flex items-center justify-center p-4" style={{ minHeight: 'var(--app-height, 100vh)' }}>
+      <main className="flex items-center justify-center p-4" style={APP_HEIGHT_STYLE}>
         <div className="game-card w-full max-w-md p-6 sm:p-8">
           <div className="text-center mb-6">
-            <h1 className="text-3xl sm:text-4xl font-black text-white mb-2 tracking-tight" style={{ fontFamily: "'Playfair Display', serif" }}>Game Lobby</h1>
+            <h1 className="text-3xl sm:text-4xl font-black text-white mb-2 tracking-tight" style={DISPLAY_FONT_STYLE}>Game Lobby</h1>
             <div className="flex items-center justify-center gap-2">
               <span className="text-felt-muted">Code:</span>
               <span className="font-mono text-2xl text-emerald-400 tracking-widest">{gameId}</span>
@@ -618,7 +626,7 @@ const KazhuthaGame = () => {
 
   // Playing/Finished Screen
   return (
-    <main className="flex flex-col p-2 sm:p-4 max-w-5xl mx-auto" style={{ minHeight: 'var(--app-height, 100vh)' }}>
+    <main className="flex flex-col p-2 sm:p-4 max-w-5xl mx-auto" style={APP_HEIGHT_STYLE}>
       <h1 className="sr-only">Kazhutha Game{isMyTurn ? ' - Your Turn' : ''}</h1>
 
       {/* Game Code Badge - inline on mobile, fixed on desktop */}
@@ -672,7 +680,7 @@ const KazhuthaGame = () => {
           }}
         >
           <div className="game-card p-8 text-center max-w-md w-full">
-            <h2 id="game-over-title" className="text-4xl sm:text-5xl font-black text-white mb-4 tracking-tight" style={{ fontFamily: "'Playfair Display', serif" }}>Game Over!</h2>
+            <h2 id="game-over-title" className="text-4xl sm:text-5xl font-black text-white mb-4 tracking-tight" style={DISPLAY_FONT_STYLE}>Game Over!</h2>
             {gameData?.kazhutha === playerName ? (
               <div className="mb-6">
                 <div className="text-6xl mb-4" aria-hidden="true">😵</div>
@@ -888,7 +896,7 @@ const KazhuthaGame = () => {
       </div>
 
       {/* Notifications */}
-      <div aria-live="polite" className="fixed left-1/2 transform -translate-x-1/2 z-50" style={{ bottom: 'max(3.5rem, calc(env(safe-area-inset-bottom) + 2.5rem))' }}>
+      <div aria-live="polite" className="fixed left-1/2 transform -translate-x-1/2 z-50" style={NOTIF_BOTTOM_STYLE}>
         {notification && (
           <div className="px-4 py-2 bg-emerald-700 text-white rounded-lg shadow-lg text-sm">
             {notification}
@@ -896,7 +904,7 @@ const KazhuthaGame = () => {
         )}
       </div>
 
-      <div aria-live="assertive" className="fixed left-1/2 transform -translate-x-1/2 z-50" style={{ bottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+      <div aria-live="assertive" className="fixed left-1/2 transform -translate-x-1/2 z-50" style={ERROR_BOTTOM_STYLE}>
         {error && (
           <div className="px-4 py-2 bg-red-600 text-white rounded-lg shadow-lg text-sm">
             {error}
