@@ -7,34 +7,21 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'card-red': '#dc2626',
-        'card-black': '#1f2937',
-        'felt-green': '#15803d',
-        'felt-dark': '#14532d',
-      },
-      animation: {
-        'card-deal': 'cardDeal 0.3s ease-out',
-        'card-play': 'cardPlay 0.2s ease-out',
-        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'bounce-subtle': 'bounceSubtle 1s ease-in-out infinite',
-      },
-      keyframes: {
-        cardDeal: {
-          '0%': { transform: 'translateY(-20px) scale(0.8)', opacity: '0' },
-          '100%': { transform: 'translateY(0) scale(1)', opacity: '1' },
+        'felt-light': '#c5d5c5',
+        'felt-muted': '#a3bca3',
+        'felt-dim': '#90a690',
+        'surface': {
+          base: '#1a2e1a',
+          card: '#243d24',
+          raised: '#2d4a2d',
+          active: '#3d5a3d',
+          deep: '#1e3220',
+          border: '#4a6b4a',
         },
-        cardPlay: {
-          '0%': { transform: 'scale(1.1)' },
-          '100%': { transform: 'scale(1)' },
+        'suit': {
+          red: '#dc2626',
+          black: '#1a1a1a',
         },
-        bounceSubtle: {
-          '0%, 100%': { transform: 'translateY(0)' },
-          '50%': { transform: 'translateY(-5px)' },
-        },
-      },
-      boxShadow: {
-        'card': '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.2)',
-        'card-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.2)',
       },
     },
   },
