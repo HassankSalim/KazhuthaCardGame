@@ -18,18 +18,20 @@
 
 body {
   margin: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #1a2e1a;
+  background: theme('colors.surface.base');
   min-height: var(--app-height, 100vh);
   overscroll-behavior: none;
 }
 
 @layer components {
   .card-base {
-    @apply relative rounded-xl transition-all duration-300 overflow-hidden;
+    @apply relative rounded-xl overflow-hidden;
+    transition-property: transform, box-shadow;
+    transition-duration: 300ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     background: #ffffff;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3),
                 inset 0 0 0 1px rgba(0, 0, 0, 0.15);
@@ -93,8 +95,8 @@ body {
   }
 
   .btn-primary {
-    @apply px-6 py-3 bg-emerald-600 text-white font-semibold rounded-lg
-           hover:bg-emerald-700 transition-all duration-200
+    @apply px-6 py-3 bg-emerald-700 text-white font-semibold rounded-lg
+           hover:bg-emerald-800 transition-all duration-200
            focus:outline-none focus:ring-2 focus:ring-emerald-400;
   }
 
@@ -105,31 +107,31 @@ body {
   }
 
   .btn-warning {
-    @apply px-4 py-2 bg-amber-600 text-white font-semibold rounded-lg
-           hover:bg-amber-700 transition-all duration-200
+    @apply px-4 py-2 bg-amber-700 text-white font-semibold rounded-lg
+           hover:bg-amber-800 transition-all duration-200
            focus:outline-none focus:ring-2 focus:ring-amber-400;
   }
 
   .input-field {
     @apply w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white
-           placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-emerald-400
+           placeholder-felt-muted focus:outline-none focus:ring-2 focus:ring-emerald-400
            focus:border-transparent transition-all duration-200;
   }
 
   .game-card {
-    @apply bg-[#243d24] rounded-2xl;
+    @apply bg-surface-card rounded-2xl;
   }
 
   .player-card {
-    @apply flex items-center gap-3 px-4 py-3 rounded-xl bg-[#2d4a2d] min-w-[140px];
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl bg-surface-raised min-w-[140px];
   }
 
   .player-card-active {
-    @apply bg-[#3d5a3d] ring-2 ring-inset ring-emerald-500;
+    @apply bg-surface-active ring-2 ring-inset ring-emerald-500;
   }
 
   .play-area {
-    @apply rounded-2xl border-2 border-dashed border-[#4a6b4a] bg-[#1e3220];
+    @apply rounded-2xl border-2 border-dashed border-surface-border bg-surface-deep;
   }
 }
 
@@ -174,6 +176,29 @@ body {
   .game-hand-area {
     padding-bottom: env(safe-area-inset-bottom);
   }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Visually hidden utility for screen readers */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 
 /* Scrollbar styling */
