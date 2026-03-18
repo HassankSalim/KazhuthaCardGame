@@ -870,6 +870,23 @@ const KazhuthaGame = () => {
         </div>
       </header>
 
+      {/* Turn Pop-up */}
+      {isMyTurn && gameData?.game_state === 'PLAYING' && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-40 animate-float-gentle" role="status">
+          <div className="flex items-center gap-3 px-5 py-3 bg-surface-card/95 backdrop-blur-sm border border-brand-gold/30 rounded-full shadow-lg shadow-black/30">
+            <div className="w-8 h-8 rounded-full bg-brand-gold/20 flex items-center justify-center flex-shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-brand-gold" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div className="min-w-0">
+              <div className="text-sm font-bold uppercase tracking-wide text-brand-gold">It's Your Turn!</div>
+              {currentSuitName && (
+                <div className="text-xs text-felt-muted">Play a card from {currentSuitName} suit if possible.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Waiting for Disconnected Player */}
       {gameData?.waiting_for_player && (
         <div className="bg-amber-500/20 border-b border-amber-500/50 px-4 py-2 text-center">
