@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import Card, { SuitIndicator } from './Card';
+import Card, { SUIT_CONFIG } from './Card';
+import HowToPlay from './HowToPlay';
 
 // In production (HTTPS), use the same host. In development, use localhost:8000
 const IS_SECURE = window.location.protocol === 'https:';
@@ -7,52 +8,32 @@ const SERVER_URL = IS_SECURE ? window.location.host : (process.env.REACT_APP_SER
 const BACKEND_URL = `${IS_SECURE ? 'https' : 'http'}://${SERVER_URL}`;
 const WS_URL = `${IS_SECURE ? 'wss' : 'ws'}://${SERVER_URL}`;
 
-// Pre-computed style objects to avoid creating new objects on every render
+// Pre-computed style objects
 const DISPLAY_FONT_STYLE = { fontFamily: "'Playfair Display', serif" };
 const APP_HEIGHT_STYLE = { minHeight: 'var(--app-height, 100vh)' };
 const NOTIF_BOTTOM_STYLE = { bottom: 'max(3.5rem, calc(env(safe-area-inset-bottom) + 2.5rem))' };
 const ERROR_BOTTOM_STYLE = { bottom: 'max(1rem, env(safe-area-inset-bottom))' };
+const MAIN_HEIGHT_STYLE = { height: 'var(--app-height, 100vh)' };
+const SUIT_INDICATOR_STYLE = { fontSize: '13px', color: 'rgba(255,255,255,0.5)', fontWeight: 500 };
+const HAND_LABEL_STYLE = { fontFamily: "'Playfair Display', serif", fontSize: '15px', fontWeight: 700, color: 'var(--color-gold)' };
+const CARD_COUNT_STYLE = { fontSize: '11px', color: 'rgba(255,255,255,0.5)', fontWeight: 500 };
+const EMPTY_TEXT_STYLE = { color: 'rgba(255,255,255,0.5)', fontSize: '14px', fontWeight: 500, textAlign: 'center' };
+const MOBILE_TABLE_STYLE = { width: '95%', maxHeight: '100%', aspectRatio: 'auto', flex: 1 };
+const PLAYER_NAME_STYLE = { maxWidth: '120px' };
+const DIM_TEXT_STYLE = { opacity: 0.6 };
+const CARD_COUNT_CHIP_STYLE = { opacity: 0.4, fontSize: '11px' };
 
-// Crown icon for host player
-const CrownIcon = () => (
-  <svg className="w-5 h-5" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="m249 64.79c-1.32-0.68-2.6 0.05-3.58 1.02l-68.85 62.36-46.25-87.55c-0.57-1.09-1.37-1.74-2.58-1.62-1.08 0.01-2.07 0.66-2.52 1.66l-45.52 87.06-69.07-62.44c-1.03-1-2.53-1.32-3.75-0.57-1.22 0.7-1.62 1.98-1.31 3.33l29.01 145c0.31 1.56 1.44 2.55 2.86 2.55h181.2c1.41 0 2.63-0.99 2.87-2.45l29.01-145c0.32-1.35-0.28-2.76-1.5-3.35z" fill="#000"/>
-    <path d="m128 47.75-44.59 86.16c-0.45 0.88-1.22 1.47-2.19 1.55-0.89 0.12-1.84-0.25-2.51-0.9l-65.76-59.43 27.02 134.8h176.1l27.02-135.3-65.64 59.79c-0.75 0.7-1.7 1-2.67 0.8-0.95-0.23-1.75-0.88-2.2-1.75l-44.54-85.71z" fill="url(#crown_paint0)"/>
-    <path d="m128 47.75-0.22 0.42v161.8h88.25l27.02-135.3-65.64 59.79c-0.75 0.7-1.7 1-2.67 0.8-0.95-0.23-1.75-0.88-2.2-1.75l-44.54-85.71z" fill="url(#crown_paint1)"/>
-    <path d="m128 75.82c-1.33-0.11-2.44 0.59-3.09 1.79l-40.2 78-47.05-41.82c-0.98-0.9-2.45-1.07-3.59-0.32-1.13 0.75-1.64 2.2-1.35 3.55l16.27 79.37c0.31 1.45 1.53 2.45 2.95 2.45h151.7c1.41 0 2.63-1.1 2.94-2.55l16.27-79.37c0.29-1.35-0.33-2.9-1.55-3.55s-2.65-0.35-3.63 0.65l-45.67 41.59-41.08-78c-0.65-1.2-1.67-1.9-2.89-1.79z" fill="#000"/>
-    <path d="m127.4 85.8-39.7 76.41c-0.45 0.9-1.32 1.6-2.3 1.65-0.97 0.1-1.92-0.3-2.65-1.05l-41.85-39.19 13.47 69.27h146.8l13.47-69.67-41.73 39.49c-0.75 0.7-1.8 1.1-2.77 0.85-0.98-0.2-1.85-0.95-2.3-1.95l-40.43-75.81z" fill="url(#crown_paint2)"/>
-    <path d="m127.8 86.45v106.4h73.39l13.47-69.67-41.73 39.49c-0.75 0.7-1.8 1.1-2.77 0.85-0.98-0.2-1.85-0.95-2.3-1.95l-40.06-75.16z" fill="url(#crown_paint3)"/>
-    <path d="m128.8 116.1c-1.13-2.05-4.4-2.05-5.43 0l-15.1 29.67c-0.56 1.1-0.51 2.45 0.1 3.55l16.92 29.17c1.13 2.1 4.46 2.1 5.58 0l16.48-29.17c0.66-1.15 0.61-2.6-0.1-3.75l-18.45-29.47z" fill="#000"/>
-    <path d="m127.7 123-13.87 24.42 13.96 23.62 13.97-24.42-14.06-23.62z" fill="url(#crown_paint4)"/>
-    <path d="m127.8 123v48.04l13.97-24.42-13.97-23.62z" fill="url(#crown_paint5)"/>
-    <defs>
-      <linearGradient id="crown_paint0" x1="12.95" x2="243" y1="128.8" y2="128.8" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#F7D046" offset="0"/>
-        <stop stopColor="#CC9210" offset="1"/>
-      </linearGradient>
-      <linearGradient id="crown_paint1" x1="185.4" x2="185.4" y1="47.75" y2="209.9" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#CC9210" offset="0"/>
-        <stop stopColor="#CC9210" offset="1"/>
-      </linearGradient>
-      <linearGradient id="crown_paint2" x1="40.91" x2="214.6" y1="134.8" y2="134.8" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#D8D9DB" offset="0"/>
-        <stop stopColor="#96989A" offset="1"/>
-      </linearGradient>
-      <linearGradient id="crown_paint3" x1="171.2" x2="171.2" y1="86.45" y2="192.9" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#96989A" offset="0"/>
-        <stop stopColor="#96989A" offset="1"/>
-      </linearGradient>
-      <linearGradient id="crown_paint4" x1="113.8" x2="141.7" y1="147" y2="147" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#3CAEF3" offset="0"/>
-        <stop stopColor="#26426B" offset="1"/>
-      </linearGradient>
-      <linearGradient id="crown_paint5" x1="134.8" x2="134.8" y1="123" y2="171" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#1E4888" offset="0"/>
-        <stop stopColor="#1E4888" offset="1"/>
-      </linearGradient>
-    </defs>
-  </svg>
-);
+// Suit indicator symbol styles for play area (use light color for black suits on dark bg)
+const SUIT_SYMBOL_STYLES = {
+  '#c0392b': { fontSize: '22px', color: 'var(--color-suit-red)' },
+  '#1a1a1a': { fontSize: '22px', color: 'var(--color-cream)' },
+};
+const SUIT_NAME_STYLE = { color: 'var(--color-cream)' };
+const AVATAR_YOU_STYLE = { background: 'var(--color-teal)', color: 'var(--color-felt)' };
+const AVATAR_OTHER_STYLE = { background: 'var(--color-gold-dim)', color: 'var(--color-cream)' };
+
+// Shared clipboard copy icon SVG path
+const COPY_ICON_PATH = "M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z";
 
 // Detect primary pointer type: fine = mouse/trackpad, coarse = touchscreen
 const hasFinePointer = window.matchMedia('(pointer: fine)').matches;
@@ -65,12 +46,12 @@ const KazhuthaGame = () => {
   const [error, setError] = useState('');
   const [notification, setNotification] = useState('');
   const [joinCode, setJoinCode] = useState('');
-  const [displayedPile, setDisplayedPile] = useState(null); // For showing resolved pile
-  const [resolvedInfo, setResolvedInfo] = useState(null); // Winner info for resolved pile
-  const [takenHandDisplay, setTakenHandDisplay] = useState(null); // For showing taken hand cards
-  const [draggedCard, setDraggedCard] = useState(null); // Card being dragged
-  const [isDragOver, setIsDragOver] = useState(false); // Whether dragging over drop zone
-  const [selectedCard, setSelectedCard] = useState(null); // Card selected by tap (mobile)
+  const [displayedPile, setDisplayedPile] = useState(null);
+  const [resolvedInfo, setResolvedInfo] = useState(null);
+  const [takenHandDisplay, setTakenHandDisplay] = useState(null);
+  const [draggedCard, setDraggedCard] = useState(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [selectedCard, setSelectedCard] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
   const [isLoading, setIsLoading] = useState(false);
   const wsRef = useRef(null);
@@ -79,6 +60,7 @@ const KazhuthaGame = () => {
   const resolvedPileTimeoutRef = useRef(null);
   const takenHandTimeoutRef = useRef(null);
   const screenRef = useRef('welcome');
+  const prevScreenRef = useRef('welcome');
   const gameOverRef = useRef(null);
 
   useEffect(() => {
@@ -95,26 +77,22 @@ const KazhuthaGame = () => {
     }
   }, [notification]);
 
-  // Keep screenRef in sync with screen state (used by WS onclose handler)
   useEffect(() => {
     screenRef.current = screen;
   }, [screen]);
 
   // Handle displaying resolved pile with timeout
   useEffect(() => {
-    // Clear any existing timeout
     if (resolvedPileTimeoutRef.current) {
       clearTimeout(resolvedPileTimeoutRef.current);
     }
 
-    // If there's a current pile, show it immediately
     if (gameData?.current_pile?.length > 0) {
       setDisplayedPile(gameData.current_pile);
       setResolvedInfo(null);
       return;
     }
 
-    // If round just ended and there's a resolved pile, show it for a timeout
     if (gameData?.resolved_pile?.length > 0 && !gameData?.current_pile?.length) {
       setDisplayedPile(gameData.resolved_pile);
       setResolvedInfo({
@@ -122,13 +100,11 @@ const KazhuthaGame = () => {
         suitBroken: gameData.suit_was_broken
       });
 
-      // Clear the displayed pile after 6 seconds
       resolvedPileTimeoutRef.current = setTimeout(() => {
         setDisplayedPile(null);
         setResolvedInfo(null);
       }, 3000);
     } else if (!gameData?.resolved_pile?.length) {
-      // No resolved pile, clear display
       setDisplayedPile(null);
       setResolvedInfo(null);
     }
@@ -140,12 +116,9 @@ const KazhuthaGame = () => {
     };
   }, [gameData?.current_pile, gameData?.resolved_pile, gameData?.resolved_winner, gameData?.suit_was_broken]);
 
-  // Handle displaying taken hand cards with timeout (fallback for state restoration)
+  // Handle displaying taken hand cards with timeout
   useEffect(() => {
-    // Only update display when there are new taken hand cards
-    // Don't clear immediately when backend clears - let the timeout handle it
     if (gameData?.taken_hand_cards?.length > 0) {
-      // Clear any existing timeout
       if (takenHandTimeoutRef.current) {
         clearTimeout(takenHandTimeoutRef.current);
       }
@@ -156,7 +129,6 @@ const KazhuthaGame = () => {
         by: gameData.taken_hand_by
       });
 
-      // Clear the display after 6 seconds
       takenHandTimeoutRef.current = setTimeout(() => {
         setTakenHandDisplay(null);
       }, 6000);
@@ -192,10 +164,27 @@ const KazhuthaGame = () => {
 
   const isCardEqual = (a, b) => a && b && a.suit === b.suit && a.rank === b.rank;
 
+  // Stable callbacks for Card drag events (avoids re-creating per render)
+  const handleDragStart = useCallback((c) => setDraggedCard(c), []);
+  const handleDragEnd = useCallback(() => setDraggedCard(null), []);
+
+  const copyGameCode = useCallback(() => {
+    try {
+      navigator.clipboard.writeText(gameId);
+      setNotification('Copied!');
+    } catch {
+      setError('Could not copy to clipboard');
+    }
+  }, [gameId]);
+
+  // Stable card select callback — Card calls onClick(card), so we toggle selection here
+  const handleCardSelect = useCallback((card) => {
+    setSelectedCard(prev => prev && prev.suit === card.suit && prev.rank === card.rank ? null : card);
+  }, []);
+
   const connectWebSocket = useCallback(() => {
     if (!gameId || !playerName) return;
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
-
 
     const ws = new WebSocket(`${WS_URL}/ws/${gameId}/${playerName}`);
 
@@ -231,7 +220,6 @@ const KazhuthaGame = () => {
             break;
           case 'hand_taken':
             setGameData(data.game_state);
-            // Directly set takenHandDisplay from the event data
             if (data.game_state?.taken_hand_cards?.length > 0) {
               if (takenHandTimeoutRef.current) {
                 clearTimeout(takenHandTimeoutRef.current);
@@ -278,8 +266,8 @@ const KazhuthaGame = () => {
         if (data.game_state?.game_state === 'FINISHED') {
           setScreen('finished');
         }
-      } catch (e) {
-        console.error('Error parsing message:', e);
+      } catch {
+        // Malformed WebSocket message — ignore silently
       }
     };
 
@@ -297,7 +285,6 @@ const KazhuthaGame = () => {
     };
 
     ws.onerror = () => {
-
       setError('Connection error');
     };
 
@@ -321,10 +308,7 @@ const KazhuthaGame = () => {
   }, []);
 
   const createGame = async () => {
-    if (!playerName.trim()) {
-      setError('Please enter your name');
-      return;
-    }
+    if (!playerName.trim()) { setError('Please enter your name'); return; }
     setIsLoading(true);
     try {
       const response = await fetch(`${BACKEND_URL}/api/game/create`, {
@@ -336,31 +320,19 @@ const KazhuthaGame = () => {
       if (!response.ok) throw new Error(data.detail || 'Failed to create game');
       setGameId(data.game_id);
       setScreen('lobby');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
+    } catch (err) { setError(err.message); }
+    finally { setIsLoading(false); }
   };
 
   const joinGame = async () => {
-    if (!playerName.trim()) {
-      setError('Please enter your name');
-      return;
-    }
-    if (!joinCode.trim()) {
-      setError('Please enter game code');
-      return;
-    }
+    if (!playerName.trim()) { setError('Please enter your name'); return; }
+    if (!joinCode.trim()) { setError('Please enter game code'); return; }
     setIsLoading(true);
     try {
       const response = await fetch(`${BACKEND_URL}/api/game/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          game_id: joinCode.trim().toUpperCase(),
-          player_name: playerName.trim(),
-        }),
+        body: JSON.stringify({ game_id: joinCode.trim().toUpperCase(), player_name: playerName.trim() }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.detail || 'Failed to join game');
@@ -371,11 +343,8 @@ const KazhuthaGame = () => {
       } else {
         setScreen('lobby');
       }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
+    } catch (err) { setError(err.message); }
+    finally { setIsLoading(false); }
   };
 
   const startGame = async () => {
@@ -388,11 +357,8 @@ const KazhuthaGame = () => {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.detail || 'Failed to start game');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
+    } catch (err) { setError(err.message); }
+    finally { setIsLoading(false); }
   };
 
   const playCard = async (card) => {
@@ -405,9 +371,7 @@ const KazhuthaGame = () => {
       const data = await response.json();
       if (!response.ok) throw new Error(data.detail || 'Invalid move');
       setGameData(data.game_state);
-    } catch (err) {
-      setError(err.message);
-    }
+    } catch (err) { setError(err.message); }
   };
 
   const takeHand = async () => {
@@ -421,9 +385,7 @@ const KazhuthaGame = () => {
       if (!response.ok) throw new Error(data.detail || 'Cannot take hand');
       setGameData(data.game_state);
       setNotification(data.message);
-    } catch (err) {
-      setError(err.message);
-    }
+    } catch (err) { setError(err.message); }
   };
 
   const resetGame = () => {
@@ -453,13 +415,11 @@ const KazhuthaGame = () => {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.detail || 'Failed to restart game');
-    } catch (err) {
-      setError(err.message);
-    }
+    } catch (err) { setError(err.message); }
   };
 
   const isMyTurn = gameData?.current_player === playerName;
-  const myPlayer = gameData?.players?.find(p => p.name === playerName);
+  const myPlayer = useMemo(() => gameData?.players?.find(p => p.name === playerName), [gameData?.players, playerName]);
   const isHost = myPlayer?.is_host;
 
   // Sort hand by suit then by value
@@ -474,189 +434,336 @@ const KazhuthaGame = () => {
     });
   }, [gameData?.your_hand]);
 
+  // Group sorted hand by suit for suit-row layout
+  const handBySuit = useMemo(() => {
+    const suitOrder = ['SPADES', 'HEARTS', 'CLUBS', 'DIAMONDS'];
+    const groups = {};
+    suitOrder.forEach(s => { groups[s] = []; });
+    sortedHand.forEach(card => {
+      if (groups[card.suit]) groups[card.suit].push(card);
+    });
+    return suitOrder
+      .filter(s => groups[s].length > 0)
+      .map(s => ({ suit: s, cards: groups[s] }));
+  }, [sortedHand]);
+
+  // How to Play Screen
+  if (screen === 'howToPlay') {
+    return <HowToPlay onBack={() => setScreen(prevScreenRef.current || 'welcome')} />;
+  }
+
   // Welcome Screen
   if (screen === 'welcome') {
     const hasGameCode = joinCode.trim().length > 0;
     const hasName = playerName.trim().length > 0;
+    const createActive = hasName && !hasGameCode && !isLoading;
+    const joinActive = hasName && hasGameCode && !isLoading;
 
     return (
-      <main className="flex items-center justify-center p-4" style={APP_HEIGHT_STYLE}>
-        <div className="game-card w-full max-w-md p-6 sm:p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-5xl sm:text-6xl font-black text-white mb-3 tracking-tight" style={DISPLAY_FONT_STYLE}>Kazhutha</h1>
-            <p className="text-felt-muted text-sm tracking-widest uppercase">A classic card game</p>
+      <div className="flex flex-col bg-brand-dark relative overflow-x-hidden" style={APP_HEIGHT_STYLE}>
+        {/* Floating suit icons */}
+        <div className="floating-icon text-9xl top-20 left-10" aria-hidden="true" style={{ animationDelay: '0s' }}>♠</div>
+        <div className="floating-icon text-8xl bottom-20 left-[15%]" aria-hidden="true" style={{ animationDelay: '2s', animationDuration: '15s' }}>♥</div>
+        <div className="floating-icon text-9xl top-1/4 right-10" aria-hidden="true" style={{ animationDelay: '4s', animationDuration: '10s' }}>♣</div>
+        <div className="floating-icon text-8xl bottom-10 right-[20%]" aria-hidden="true" style={{ animationDelay: '6s' }}>♦</div>
+        <div className="floating-icon text-7xl top-1/2 left-5" aria-hidden="true" style={{ animationDelay: '1s', animationDuration: '14s' }}>♦</div>
+        <div className="floating-icon text-7xl bottom-1/3 right-5" aria-hidden="true" style={{ animationDelay: '5s', animationDuration: '16s' }}>♠</div>
+
+        {/* Header */}
+        <header className="flex items-center justify-between px-6 md:px-20 py-4 border-b border-brand-primary/20 bg-brand-dark/80 backdrop-blur-md sticky top-0 z-50">
+          <div className="flex items-center gap-3">
+            <span className="text-emerald-500 text-2xl" aria-hidden="true">♠</span>
+            <h2 className="text-white text-xl font-extrabold tracking-tight">Kazhutha</h2>
           </div>
+          <button
+            onClick={() => { prevScreenRef.current = screen; setScreen('howToPlay'); }}
+            className="w-10 h-10 flex items-center justify-center rounded-lg bg-brand-primary/10 hover:bg-brand-primary/20 transition-colors text-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+            aria-label="How to play"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </button>
+        </header>
 
-          <div className="space-y-4">
-            <input
-              type="text"
-              placeholder="Enter your name"
-              value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
-              className="input-field"
-              maxLength={20}
-              aria-label="Your name"
-            />
-
-            <input
-              type="text"
-              placeholder="Enter game code"
-              value={joinCode}
-              onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-              className="input-field"
-              maxLength={6}
-              aria-label="Game code"
-            />
-
-            <div className="flex gap-3">
-              <button
-                onClick={createGame}
-                disabled={!hasName || hasGameCode || isLoading}
-                className={`btn-primary flex-1 ${(!hasName || hasGameCode || isLoading) ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {isLoading ? 'Creating...' : 'Create Game'}
-              </button>
-              <button
-                onClick={joinGame}
-                disabled={!hasName || !hasGameCode || isLoading}
-                className={`btn-secondary flex-1 ${(!hasName || !hasGameCode || isLoading) ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {isLoading ? 'Joining...' : 'Join Game'}
-              </button>
+        {/* Main content */}
+        <main className="flex-grow flex flex-col items-center justify-center px-4 py-8 relative z-10">
+          <div className="w-full max-w-md animate-entrance">
+            {/* Hero banner */}
+            <div className="bg-brand-primary/30 rounded-t-2xl py-10 px-6 text-center border border-brand-primary/40 border-b-0">
+              <h1 className="text-brand-gold text-4xl md:text-5xl font-black tracking-wide mb-2" style={DISPLAY_FONT_STYLE}>KAZHUTHA</h1>
+              <p className="text-emerald-200/60 text-sm font-bold tracking-[0.3em] uppercase">A Classic Card Game</p>
             </div>
+
+            {/* Form */}
+            <form
+              className="bg-surface-card rounded-b-2xl p-6 md:p-8 space-y-5 animate-entrance-1"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (hasName && hasGameCode && !isLoading) joinGame();
+                else if (hasName && !hasGameCode && !isLoading) createGame();
+              }}
+            >
+              {/* Name Input */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold uppercase tracking-widest text-emerald-100/60" htmlFor="player-name">
+                  Display Name
+                </label>
+                <div className="relative">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  <input
+                    type="text"
+                    id="player-name"
+                    placeholder="e.g. AceOfSpades"
+                    value={playerName}
+                    onChange={(e) => setPlayerName(e.target.value)}
+                    className="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-brand-primary/40 bg-brand-primary/10 text-white placeholder-emerald-600 focus:border-emerald-500 focus:ring-0 transition-colors"
+                    maxLength={20}
+                  />
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="relative py-2">
+                <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                  <div className="w-full border-t border-brand-primary/30"></div>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase tracking-widest font-bold">
+                  <span className="bg-surface-card px-4 text-emerald-600">Join an existing lobby</span>
+                </div>
+              </div>
+
+              {/* Code Input */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold uppercase tracking-widest text-emerald-100/60" htmlFor="game-code">
+                  Game Code
+                </label>
+                <div className="relative">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 7h3a5 5 0 015 5 5 5 0 01-5 5h-3m-6 0H6a5 5 0 01-5-5 5 5 0 015-5h3"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                  <input
+                    type="text"
+                    id="game-code"
+                    placeholder="— — — — — —"
+                    value={joinCode}
+                    onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                    className="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-brand-primary/40 bg-brand-primary/10 text-white font-mono uppercase text-center text-xl tracking-[0.4em] placeholder-emerald-600 focus:border-emerald-500 focus:ring-0 transition-colors"
+                    maxLength={6}
+                  />
+                </div>
+              </div>
+
+              {/* Create Button — gold 3D style matching lobby */}
+              <button
+                type={createActive ? 'submit' : 'button'}
+                onClick={createActive ? createGame : undefined}
+                disabled={!createActive}
+                className={`w-full py-4 rounded-xl font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card ${
+                  createActive
+                    ? 'bg-brand-gold hover:brightness-110 text-brand-dark shadow-[0_4px_0_0_theme(colors.brand.gold-shadow)] hover:shadow-[0_2px_0_0_theme(colors.brand.gold-shadow)] active:shadow-none active:translate-y-1'
+                    : 'bg-brand-gold/40 text-brand-dark/50 cursor-not-allowed'
+                }`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                {isLoading && !hasGameCode ? 'Creating...' : 'Create New Game'}
+              </button>
+
+              {/* Join Button — outlined style matching lobby */}
+              <button
+                type={joinActive ? 'submit' : 'button'}
+                onClick={joinActive ? joinGame : undefined}
+                disabled={!joinActive}
+                className={`w-full py-4 rounded-xl font-bold uppercase tracking-widest flex items-center justify-center gap-2 border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card ${
+                  joinActive
+                    ? 'border-brand-gold/60 text-brand-gold hover:bg-brand-gold/10 shadow-[0_4px_0_0_theme(colors.brand.gold-shadow)/30] hover:shadow-[0_2px_0_0_theme(colors.brand.gold-shadow)/30] active:shadow-none active:translate-y-1'
+                    : 'border-brand-primary/20 text-emerald-800 cursor-not-allowed'
+                }`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                {isLoading && hasGameCode ? 'Joining...' : 'Join Game'}
+              </button>
+            </form>
           </div>
 
+          {/* Footer */}
+          <p className="mt-8 text-emerald-600 text-xs tracking-widest uppercase">Kazhutha Digital &copy; 2024</p>
+
+          {/* Error toast */}
           {error && (
-            <div role="alert" className="mt-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300 text-sm text-center">
+            <div role="alert" className="fixed left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-red-600 text-white rounded-lg shadow-lg text-sm animate-toast" style={ERROR_BOTTOM_STYLE}>
               {error}
             </div>
           )}
-        </div>
-      </main>
+        </main>
+      </div>
     );
   }
 
   // Lobby Screen
   if (screen === 'lobby') {
+    const players = gameData?.players || [{ name: playerName, is_host: true }];
+    const maxPlayers = 8;
+    const emptySlots = Math.max(0, Math.min(maxPlayers, 4) - players.length);
+
     return (
-      <main className="flex items-center justify-center p-4" style={APP_HEIGHT_STYLE}>
-        <div className="game-card w-full max-w-md p-6 sm:p-8">
-          <div className="text-center mb-6">
-            <h1 className="text-3xl sm:text-4xl font-black text-white mb-2 tracking-tight" style={DISPLAY_FONT_STYLE}>Game Lobby</h1>
-            <div className="flex items-center justify-center gap-2">
-              <span className="text-felt-muted">Code:</span>
-              <span className="font-mono text-2xl text-emerald-400 tracking-widest">{gameId}</span>
+      <div className="flex flex-col bg-brand-dark relative overflow-x-hidden" style={APP_HEIGHT_STYLE}>
+        {/* Floating suit icons — same as welcome screen (#2) */}
+        <div className="floating-icon text-9xl top-20 left-10" aria-hidden="true" style={{ animationDelay: '0s' }}>♠</div>
+        <div className="floating-icon text-8xl bottom-20 left-[15%]" aria-hidden="true" style={{ animationDelay: '2s', animationDuration: '15s' }}>♥</div>
+        <div className="floating-icon text-9xl top-1/4 right-10" aria-hidden="true" style={{ animationDelay: '4s', animationDuration: '10s' }}>♣</div>
+        <div className="floating-icon text-8xl bottom-10 right-[20%]" aria-hidden="true" style={{ animationDelay: '6s' }}>♦</div>
+        <div className="floating-icon text-7xl top-1/2 left-5" aria-hidden="true" style={{ animationDelay: '1s', animationDuration: '14s' }}>♦</div>
+        <div className="floating-icon text-7xl bottom-1/3 right-5" aria-hidden="true" style={{ animationDelay: '5s', animationDuration: '16s' }}>♠</div>
+
+        {/* Shared header bar — same as welcome screen (#1) */}
+        <header className="flex items-center justify-between px-6 md:px-20 py-4 border-b border-brand-primary/20 bg-brand-dark/80 backdrop-blur-md sticky top-0 z-50">
+          <div className="flex items-center gap-3">
+            <span className="text-emerald-500 text-2xl" aria-hidden="true">♠</span>
+            <h2 className="text-white text-xl font-extrabold tracking-tight">Kazhutha</h2>
+          </div>
+          <button
+            onClick={() => { prevScreenRef.current = screen; setScreen('howToPlay'); }}
+            className="w-10 h-10 flex items-center justify-center rounded-lg bg-brand-primary/10 hover:bg-brand-primary/20 transition-colors text-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+            aria-label="How to play"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </button>
+        </header>
+
+        {/* Main content */}
+        <main className="flex-grow flex flex-col items-center justify-center px-4 py-8 relative z-10">
+          <div className="w-full max-w-md animate-entrance">
+            {/* Game Code Section */}
+            <section className="bg-brand-primary/30 rounded-t-2xl p-5 md:p-6 border border-brand-primary/40 border-b-0 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-entrance-1">
+              <div>
+                <h1 className="text-brand-gold text-xl md:text-2xl font-black tracking-wide mb-1" style={DISPLAY_FONT_STYLE}>GAME LOBBY</h1>
+                <div className="flex items-center gap-2">
+                  <span className="text-white/50 text-xs uppercase tracking-widest">Room Code</span>
+                  <span className="text-lg md:text-xl font-bold text-white tracking-[0.2em] font-mono">{gameId}</span>
+                </div>
+              </div>
               <button
-                onClick={() => {
-                  try {
-                    navigator.clipboard.writeText(gameId);
-                    setNotification('Copied!');
-                  } catch {
-                    setError('Could not copy to clipboard');
-                  }
-                }}
-                className="p-3 text-felt-dim hover:text-white rounded transition-colors"
+                onClick={copyGameCode}
+                className="bg-brand-gold hover:brightness-110 text-brand-dark font-bold py-3 px-6 rounded-lg text-sm uppercase tracking-widest shadow-[0_3px_0_0_theme(colors.brand.gold-shadow)] hover:shadow-[0_1px_0_0_theme(colors.brand.gold-shadow)] active:shadow-none active:translate-y-[2px] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold focus-visible:ring-offset-2 focus-visible:ring-offset-brand-dark"
                 aria-label="Copy game code"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
+                Copy Code
               </button>
+            </section>
+
+            {/* Players + Actions card */}
+            <div className="bg-surface-card rounded-b-2xl p-6 md:p-8 animate-entrance-2">
+              {/* Player count */}
+              <div className="flex items-center justify-center gap-2 mb-6">
+                <span className="relative flex h-3 w-3" aria-hidden="true">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                </span>
+                <span className="text-white/70 font-semibold text-sm">{players.length} / {maxPlayers} Players</span>
+              </div>
+
+              {/* Players Grid */}
+              <section className="grid grid-cols-2 sm:grid-cols-3 gap-6 mb-8" aria-label="Players in lobby">
+                {players.map((player) => {
+                  const isYou = player.name === playerName;
+                  return (
+                    <div key={player.name} className="flex flex-col items-center group">
+                      <div className="relative">
+                        <div className={`w-20 h-20 md:w-24 md:h-24 rounded-full border-4 ${
+                          player.is_host ? 'border-emerald-500' : 'border-white/10'
+                        } flex items-center justify-center mb-2 transition-transform group-hover:scale-105 ${
+                          player.is_host ? 'bg-brand-primary/30' : 'bg-white/5'
+                        }`}>
+                          <span className={`text-2xl md:text-3xl font-bold ${
+                            player.is_host ? 'text-emerald-400' : 'text-white/70'
+                          }`}>
+                            {player.name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        {player.is_host && (
+                          <span className="absolute -top-2 -right-2 bg-emerald-500 text-brand-dark text-[10px] font-bold px-2 py-1 rounded-full border-2 border-surface-card uppercase">Host</span>
+                        )}
+                      </div>
+                      <span className={`font-semibold text-sm truncate max-w-[100px] ${isYou ? 'text-white' : 'text-white/80'}`}>
+                        {player.name}{isYou && ' (You)'}
+                      </span>
+                    </div>
+                  );
+                })}
+
+                {/* Empty slots */}
+                {Array.from({ length: emptySlots }).map((_, i) => (
+                  <div key={`empty-${i}`} className="flex flex-col items-center opacity-30">
+                    <div className="w-20 h-20 md:w-24 md:h-24 rounded-full border-4 border-dashed border-white/40 flex items-center justify-center mb-2">
+                      <span className="text-white text-3xl" aria-hidden="true">+</span>
+                    </div>
+                    <span className="text-white/50 text-sm">Waiting...</span>
+                  </div>
+                ))}
+              </section>
+
+              {/* Actions */}
+              <footer className="flex flex-col items-center space-y-4">
+                {isHost ? (
+                  <button
+                    onClick={startGame}
+                    disabled={(players.length) < 2 || isLoading}
+                    className={`bg-brand-gold hover:brightness-110 text-brand-dark font-bold py-4 px-12 rounded-xl text-lg shadow-[0_4px_0_0_theme(colors.brand.gold-shadow)] hover:shadow-[0_2px_0_0_theme(colors.brand.gold-shadow)] active:shadow-none active:translate-y-1 transition-all uppercase tracking-widest w-full sm:w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card ${
+                      (players.length) < 2 || isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    {isLoading ? 'Starting...' : (players.length) < 2 ? 'Waiting for players...' : 'Start Game'}
+                  </button>
+                ) : (
+                  <div className="flex flex-col items-center space-y-2">
+                    <div className="flex gap-1" aria-hidden="true">
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" style={{ animationDelay: '0s' }}></div>
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" style={{ animationDelay: '0.3s' }}></div>
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" style={{ animationDelay: '0.6s' }}></div>
+                    </div>
+                    <p className="text-white/60 italic text-sm">Waiting for host to start...</p>
+                  </div>
+                )}
+                <button onClick={resetGame} className="btn-text w-full">
+                  Leave Lobby
+                </button>
+              </footer>
             </div>
           </div>
 
-          <div className="mb-6">
-            <h3 className="text-felt-muted text-sm mb-3">Players ({gameData?.players?.length || 1}/8)</h3>
-            <div className="space-y-2">
-              {(gameData?.players || [{ name: playerName, is_host: true }]).map((player) => (
-                <div
-                  key={player.name}
-                  className={`player-card ${player.name === playerName ? 'ring-1 ring-emerald-500/50' : ''}`}
-                >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                    player.is_host ? 'bg-amber-500/20 text-amber-400' : 'bg-white/10 text-felt-light'
-                  }`}>
-                    {player.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="flex-1">
-                    <span className="text-white font-medium">{player.name}</span>
-                    {player.name === playerName && <span className="text-emerald-400 text-sm ml-1">(You)</span>}
-                  </div>
-                  {player.is_host && (
-                    <span className="text-xs px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded">Host</span>
-                  )}
-                </div>
-              ))}
-            </div>
+          {/* Footer */}
+          <p className="mt-8 text-emerald-600 text-xs tracking-widest uppercase">Kazhutha Digital &copy; 2024</p>
+        </main>
+
+        {/* Notifications */}
+        {notification && (
+          <div role="status" className="fixed left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-emerald-700 text-white rounded-lg shadow-lg text-sm animate-toast" style={NOTIF_BOTTOM_STYLE}>
+            {notification}
           </div>
-
-          {isHost ? (
-            <button
-              onClick={startGame}
-              disabled={(gameData?.players?.length || 1) < 2 || isLoading}
-              className={`btn-primary w-full ${((gameData?.players?.length || 1) < 2 || isLoading) ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              {isLoading ? 'Starting...' : (gameData?.players?.length || 1) < 2 ? 'Waiting for players...' : 'Start Game'}
-            </button>
-          ) : (
-            <div className="text-center text-felt-dim py-4">
-              Waiting for host to start...
-            </div>
-          )}
-
-          <button onClick={resetGame} className="w-full mt-4 text-felt-dim hover:text-felt-light text-sm transition-colors">
-            Leave Lobby
-          </button>
-
-          {notification && (
-            <div role="status" className="mt-4 p-3 bg-emerald-500/20 border border-emerald-500/50 rounded-lg text-emerald-300 text-sm text-center">
-              {notification}
-            </div>
-          )}
-
-          {error && (
-            <div role="alert" className="mt-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300 text-sm text-center">
-              {error}
-            </div>
-          )}
-        </div>
-      </main>
+        )}
+        {error && (
+          <div role="alert" className="fixed left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-red-600 text-white rounded-lg shadow-lg text-sm animate-toast" style={ERROR_BOTTOM_STYLE}>
+            {error}
+          </div>
+        )}
+      </div>
     );
   }
 
-  // Playing/Finished Screen
-  return (
-    <main className="flex flex-col p-2 sm:p-4 max-w-5xl mx-auto" style={APP_HEIGHT_STYLE}>
-      <h1 className="sr-only">Kazhutha Game{isMyTurn ? ' - Your Turn' : ''}</h1>
+  // ── Playing / Finished Screen ──
+  // New layout: Top Bar → 60/40 split (Play Area | Hand Panel)
+  // On mobile: stacked vertically instead of side-by-side
 
-      {/* Game Code Badge - inline on mobile, fixed on desktop */}
-      <div className={`${isMobile ? 'flex justify-end mb-2' : 'fixed top-4 right-4'} z-40`}>
-        <div className="game-card px-2.5 py-1.5 sm:px-3 sm:py-2 flex items-center gap-1.5 sm:gap-2">
-          <span className="text-felt-muted text-xs">Code:</span>
-          <span className="font-mono text-xs sm:text-sm text-emerald-400 tracking-wider">{gameId}</span>
-          <button
-            onClick={() => {
-              try {
-                navigator.clipboard.writeText(gameId);
-                setNotification('Game code copied!');
-              } catch {
-                setError('Could not copy to clipboard');
-              }
-            }}
-            className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-felt-dim hover:text-white rounded transition-colors"
-            aria-label="Copy game code"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
-          </button>
-        </div>
-      </div>
+  const currentSuit = gameData?.current_suit;
+  const currentSuitConfig = currentSuit ? SUIT_CONFIG[currentSuit] : null;
+  const currentSuitName = currentSuitConfig?.name ?? null;
+  const currentSuitSymbol = currentSuitConfig?.symbol ?? null;
+
+  return (
+    <main className="flex flex-col overflow-hidden bg-brand-dark" style={MAIN_HEIGHT_STYLE}>
+      <h1 className="sr-only">Kazhutha Game{isMyTurn ? ' - Your Turn' : ''}</h1>
 
       {/* Game Over Modal */}
       {screen === 'finished' && (
         <div
-          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 animate-backdrop"
           role="dialog"
           aria-modal="true"
           aria-labelledby="game-over-title"
@@ -679,226 +786,247 @@ const KazhuthaGame = () => {
             }
           }}
         >
-          <div className="game-card p-8 text-center max-w-md w-full">
+          <div className="game-card p-8 text-center max-w-md w-full animate-modal">
             <h2 id="game-over-title" className="text-4xl sm:text-5xl font-black text-white mb-4 tracking-tight" style={DISPLAY_FONT_STYLE}>Game Over!</h2>
             {gameData?.kazhutha === playerName ? (
               <div className="mb-6">
-                <div className="text-6xl mb-4" aria-hidden="true">😵</div>
                 <p className="text-xl text-red-400">You are the Kazhutha!</p>
               </div>
             ) : (
               <div className="mb-6">
-                <div className="text-6xl mb-4" aria-hidden="true">🎉</div>
                 <p className="text-xl text-emerald-400">You won!</p>
                 <p className="text-felt-muted mt-2">{gameData?.kazhutha} is the Kazhutha</p>
               </div>
             )}
             {isHost ? (
               <div className="space-y-3">
-                <button onClick={playAgain} className="btn-primary w-full">
-                  Play Again
-                </button>
-                <button onClick={resetGame} className="w-full text-felt-dim hover:text-felt-light text-sm transition-colors">
-                  Leave Game
-                </button>
+                <button onClick={playAgain} className="btn-primary w-full">Play Again</button>
+                <button onClick={resetGame} className="btn-text w-full">Leave Game</button>
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="text-felt-dim py-2 text-sm">
-                  Waiting for host to play again...
-                </div>
-                <button onClick={resetGame} className="w-full text-felt-dim hover:text-felt-light text-sm transition-colors">
-                  Leave Game
-                </button>
+                <div className="text-felt-muted py-2 text-sm">Waiting for host to play again...</div>
+                <button onClick={resetGame} className="btn-text w-full">Leave Game</button>
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* Player Bar */}
-      <div className="game-card p-2 sm:p-4 mb-2 sm:mb-4">
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* Players - horizontal scroll on mobile, wrap on desktop */}
-          <div className="flex gap-2 sm:gap-3 flex-1 overflow-x-auto sm:flex-wrap scrollbar-hide pb-1">
+      {/* ── Top Bar ── */}
+      <header className="top-bar">
+        <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <div className="game-code">{gameId}</div>
+            <button
+              onClick={copyGameCode}
+              className="p-2.5 -m-1 text-gold-dim hover:text-gold rounded transition-colors"
+              aria-label="Copy game code"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={COPY_ICON_PATH} />
+              </svg>
+            </button>
+          </div>
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide flex-1 min-w-0">
             {gameData?.players?.map((player) => {
               const isCurrentPlayer = player.name === gameData.current_player;
               const isYou = player.name === playerName;
               const isDisconnected = !player.is_connected && gameData?.game_state === 'PLAYING';
 
               return (
-                <div key={player.name} className="relative pt-1 pb-2 flex-shrink-0">
-                  {/* Crown for host - top left */}
-                  {player.is_host && (
-                    <div className="absolute -top-1 -left-1 z-10">
-                      <CrownIcon />
-                    </div>
-                  )}
-
-                  <div className={`player-card ${isCurrentPlayer ? 'player-card-active' : ''} ${isDisconnected ? 'opacity-50' : ''}`}>
-                    <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold ${
-                      player.is_winner ? 'bg-amber-500/30 text-amber-400' :
-                      player.is_kazhutha ? 'bg-red-500/30 text-red-400' :
-                      isDisconnected ? 'bg-red-500/20 text-red-400' :
-                      isYou ? 'bg-emerald-500/30 text-emerald-400' :
-                      'bg-white/10 text-felt-light'
-                    }`}>
-                      {player.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <div className="text-white text-xs sm:text-sm font-medium whitespace-nowrap">
-                        {player.name}
-                        {isYou && <span className="text-emerald-400 text-xs"> (You)</span>}
-                        {isDisconnected && <span className="text-red-400 text-xs ml-1">(DC)</span>}
-                      </div>
-                      <div className="text-felt-muted text-xs">
-                        {player.is_winner ? 'Won!' : player.is_kazhutha ? 'Kazhutha!' : `${player.card_count} cards`}
-                      </div>
-                    </div>
+                <div
+                  key={player.name}
+                  className={`player-chip ${isYou ? 'you' : ''} ${isCurrentPlayer ? 'player-chip-active' : ''} ${isDisconnected ? 'opacity-50' : ''}`}
+                >
+                  <div
+                    className="player-avatar"
+                    style={isYou ? AVATAR_YOU_STYLE : AVATAR_OTHER_STYLE}
+                  >
+                    {player.name.charAt(0).toUpperCase()}
                   </div>
-
-                  {/* Turn indicator dot - centered below card */}
-                  {isCurrentPlayer && (
-                    <div className="absolute -bottom-1 inset-x-0 flex justify-center">
-                      <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    </div>
-                  )}
+                  <span className="truncate" style={PLAYER_NAME_STYLE}>
+                    {player.name}
+                    {isYou && <span style={DIM_TEXT_STYLE}> (You)</span>}
+                    {isDisconnected && <span className="text-red-400 text-xs ml-1">(DC)</span>}
+                  </span>
+                  <span style={CARD_COUNT_CHIP_STYLE}>
+                    {player.is_winner ? 'Won' : player.is_kazhutha ? 'Lost' : player.card_count}
+                  </span>
+                  {isCurrentPlayer && <div className="turn-dot" />}
                 </div>
               );
             })}
           </div>
-
-          {/* Current Suit */}
-          <SuitIndicator suit={gameData?.current_suit} />
         </div>
-      </div>
+
+        <div className="flex items-center flex-shrink-0">
+          {/* Take Hand Button */}
+          {gameData?.can_take_from_left && !gameData?.round_in_progress && (
+            <button onClick={takeHand} className="take-hand-btn">
+              Take {gameData.can_take_from_left}'s Hand
+            </button>
+          )}
+        </div>
+      </header>
+
+      {/* Turn Pop-up */}
+      {isMyTurn && gameData?.game_state === 'PLAYING' && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-40 animate-float-gentle" role="status">
+          <div className="flex items-center gap-3 px-5 py-3 bg-surface-card/95 backdrop-blur-sm border border-brand-gold/30 rounded-full shadow-lg shadow-black/30">
+            <div className="w-8 h-8 rounded-full bg-brand-gold/20 flex items-center justify-center flex-shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-brand-gold" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div className="min-w-0">
+              <div className="text-sm font-bold uppercase tracking-wide text-brand-gold">It's Your Turn!</div>
+              {currentSuitName && (
+                <div className="text-xs text-felt-muted">Play a card from {currentSuitName} suit if possible.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Waiting for Disconnected Player */}
       {gameData?.waiting_for_player && (
-        <div className="bg-amber-500/20 border border-amber-500/50 rounded-lg p-3 sm:p-4 mb-2 sm:mb-4 text-center">
-          <span className="text-amber-300 text-xs sm:text-base">Waiting for {gameData.waiting_for_player} to reconnect...</span>
+        <div className="bg-amber-500/20 border-b border-amber-500/50 px-4 py-2 text-center">
+          <span className="text-amber-300 text-xs sm:text-sm">Waiting for {gameData.waiting_for_player} to reconnect...</span>
         </div>
       )}
 
-      {/* Take Hand Button (Special Rule) */}
-      {gameData?.can_take_from_left && !gameData?.round_in_progress && (
-        <div className="game-card p-3 mb-2 sm:mb-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:justify-between">
-          <span className="text-felt-light text-xs sm:text-sm text-center sm:text-left">Special Rule: Take cards from player on your left</span>
-          <button onClick={takeHand} className="btn-warning text-sm whitespace-nowrap">
-            Take {gameData.can_take_from_left}'s Hand
-          </button>
-        </div>
-      )}
+      {/* ── Main Game Area: 60/40 split (stacked on mobile) ── */}
+      <div className={`flex-1 flex ${isMobile ? 'flex-col' : 'flex-row'} overflow-hidden`}>
 
-      {/* Play Area - Drop Zone */}
-      <div
-        role="region"
-        aria-label={isMyTurn ? 'Play area - your turn' : `Play area - waiting for ${gameData?.current_player || 'opponent'}`}
-        className={`play-area drop-zone p-3 sm:p-6 mb-2 sm:mb-4 min-h-[180px] sm:min-h-[381px] flex flex-col items-center justify-center ${isDragOver ? 'drop-zone-active' : ''} ${selectedCard && isMyTurn ? 'drop-zone-ready' : ''}`}
-        onClick={() => {
-          if (selectedCard && isMyTurn) {
-            playCard(selectedCard);
-            setSelectedCard(null);
-          }
-        }}
-        onDragOver={(e) => {
-          e.preventDefault();
-          e.dataTransfer.dropEffect = 'move';
-          if (isMyTurn && draggedCard) {
-            setIsDragOver(true);
-          }
-        }}
-        onDragLeave={() => setIsDragOver(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setIsDragOver(false);
-          if (isMyTurn && draggedCard) {
-            playCard(draggedCard);
-            setDraggedCard(null);
-          }
-        }}
-      >
-        {displayedPile?.length > 0 ? (
-          <div className="flex flex-col items-center">
-            <div className="flex flex-wrap gap-2 sm:gap-3 justify-center items-end">
-              {displayedPile.map((play, index) => (
-                <div key={index} className="flex flex-col items-center">
-                  <Card card={play.card} small={isMobile} medium={!isMobile} />
-                  <span className={`text-xs mt-1 ${
-                    resolvedInfo?.winner === play.player ? 'text-amber-400 font-bold' : 'text-felt-muted'
-                  }`}>{play.player}</span>
-                </div>
-              ))}
+        {/* ── Play Area (60%) ── */}
+        <div className={`${isMobile ? 'flex-1 min-h-0' : 'flex-[6]'} flex flex-col items-center justify-center p-4 sm:p-6 relative min-w-0`}>
+          {/* Suit indicator */}
+          {currentSuitSymbol && (
+            <div className="flex items-center gap-2 mb-3" style={SUIT_INDICATOR_STYLE}>
+              <span>Lead suit:</span>
+              <span style={SUIT_SYMBOL_STYLES[SUIT_CONFIG[gameData.current_suit]?.color] || SUIT_SYMBOL_STYLES['#1a1a1a']}>
+                {currentSuitSymbol}
+              </span>
+              <span style={SUIT_NAME_STYLE}>{currentSuitName}</span>
             </div>
-            {resolvedInfo && (
-              <div className={`mt-2 sm:mt-3 text-xs sm:text-sm font-medium ${resolvedInfo.suitBroken ? 'text-red-400' : 'text-emerald-400'}`}>
-                {resolvedInfo.suitBroken
-                  ? `${resolvedInfo.winner} picks up the pile!`
-                  : `Cards discarded - ${resolvedInfo.winner} leads next!`}
+          )}
+
+          {/* Table center / drop zone */}
+          <div
+            role="region"
+            aria-label={isMyTurn ? 'Play area - your turn' : `Play area - waiting for ${gameData?.current_player || 'opponent'}`}
+            className={`table-center ${isMyTurn ? 'active' : ''} ${isDragOver ? 'drop-zone-active' : ''} ${selectedCard && isMyTurn ? 'drop-zone-ready' : ''}`}
+            style={isMobile ? MOBILE_TABLE_STYLE : undefined}
+            onClick={() => {
+              if (selectedCard && isMyTurn) {
+                playCard(selectedCard);
+                setSelectedCard(null);
+              }
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = 'move';
+              if (isMyTurn && draggedCard) setIsDragOver(true);
+            }}
+            onDragLeave={() => setIsDragOver(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDragOver(false);
+              if (isMyTurn && draggedCard) {
+                playCard(draggedCard);
+                setDraggedCard(null);
+              }
+            }}
+          >
+            {displayedPile?.length > 0 ? (
+              <div className="flex flex-col items-center">
+                <div className="flex flex-wrap gap-2 sm:gap-3 justify-center items-end">
+                  {displayedPile.map((play, index) => (
+                    <div key={index} className="flex flex-col items-center">
+                      <Card card={play.card} />
+                      <span className={`text-xs mt-1 ${
+                        resolvedInfo?.winner === play.player ? 'text-amber-400 font-bold' : 'text-felt-muted'
+                      }`}>{play.player}</span>
+                    </div>
+                  ))}
+                </div>
+                {resolvedInfo && (
+                  <div className={`mt-2 sm:mt-3 text-xs sm:text-sm font-medium ${resolvedInfo.suitBroken ? 'text-red-400' : 'text-emerald-400'}`}>
+                    {resolvedInfo.suitBroken
+                      ? `${resolvedInfo.winner} picks up the pile!`
+                      : `Cards discarded - ${resolvedInfo.winner} leads next!`}
+                  </div>
+                )}
+              </div>
+            ) : takenHandDisplay ? (
+              <div className="flex flex-col items-center">
+                <div className="text-amber-400 font-bold text-xs sm:text-sm mb-2 sm:mb-3">
+                  {takenHandDisplay.by} took {takenHandDisplay.from}'s hand! ({takenHandDisplay.cards.length} cards)
+                </div>
+                <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-center max-h-[160px] sm:max-h-[300px] overflow-y-auto">
+                  {takenHandDisplay.cards.map((card, idx) => (
+                    <Card key={`taken-${card.suit}-${card.rank}-${idx}`} card={card} />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div style={EMPTY_TEXT_STYLE}>
+                {isMyTurn
+                  ? (!hasFinePointer
+                      ? (selectedCard ? 'Tap here to play the selected card' : 'Tap a card to select it')
+                      : 'Your turn \u2014 drag a card here to play')
+                  : `Waiting for ${gameData?.current_player}...`}
               </div>
             )}
           </div>
-        ) : takenHandDisplay ? (
-          <div className="flex flex-col items-center">
-            <div className="text-amber-400 font-bold text-xs sm:text-sm mb-2 sm:mb-3">
-              {takenHandDisplay.by} took {takenHandDisplay.from}'s hand! ({takenHandDisplay.cards.length} cards)
-            </div>
-            <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-center max-h-[200px] sm:max-h-[545px] overflow-y-auto">
-              {takenHandDisplay.cards.map((card, idx) => (
-                <Card key={`taken-${card.suit}-${card.rank}-${idx}`} card={card} small={isMobile} medium={!isMobile} />
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="text-felt-dim text-sm text-center">
-            {isMyTurn
-              ? (!hasFinePointer
-                  ? (selectedCard ? 'Tap here to play the selected card' : 'Tap a card to select it')
-                  : 'Your turn - drag a card here to play')
-              : `Waiting for ${gameData?.current_player}...`}
-          </div>
-        )}
-      </div>
-
-      {/* Your Hand */}
-      <div className="game-card p-3 sm:p-4 game-hand-area">
-        <div className="flex items-center justify-between mb-3 sm:mb-4">
-          <h2 className="text-white font-medium text-sm sm:text-base">Your Hand</h2>
-          <span className="text-felt-muted text-xs sm:text-sm">{sortedHand.length} cards</span>
         </div>
 
-        <div className={`flex flex-wrap gap-1.5 sm:gap-2 justify-start ${isMobile ? 'max-h-[280px] overflow-y-auto' : ''}`}>
-          {sortedHand.map((card, idx) => (
-            <Card
-              key={`${card.suit}-${card.rank}-${idx}`}
-              card={card}
-              small={isMobile}
-              draggable={isMyTurn && hasFinePointer}
-              onDragStart={(card) => setDraggedCard(card)}
-              onDragEnd={() => setDraggedCard(null)}
-              onClick={isMyTurn ? () => {
-                if (isCardEqual(selectedCard, card)) {
-                  setSelectedCard(null);
-                } else {
-                  setSelectedCard(card);
-                }
-              } : undefined}
-              disabled={!isMyTurn}
-              selected={isCardEqual(selectedCard, card)}
-            />
-          ))}
-          {sortedHand.length === 0 && (
-            <div className="text-felt-dim py-8 w-full text-center">
-              {myPlayer?.is_winner ? "You've won!" : "No cards"}
+        {/* ── Hand Panel (40%) ── */}
+        <div className={`${isMobile ? 'flex-shrink-0' : 'flex-[4]'} flex flex-col items-center justify-center min-w-0 p-3 sm:p-4 game-hand-area`}>
+          <div className="flex items-center justify-between w-full px-3 pb-2">
+            <div style={HAND_LABEL_STYLE}>
+              Your Hand
             </div>
-          )}
+            <div style={CARD_COUNT_STYLE}>
+              {sortedHand.length} cards
+            </div>
+          </div>
+
+          <div className={`suit-rows ${isMobile ? 'max-h-[240px] overflow-y-auto' : ''}`}>
+            {handBySuit.map(({ suit, cards }) => {
+              const isLed = currentSuit === suit;
+              return (
+                <div key={suit} className={`suit-row ${isLed ? 'led' : ''}`}>
+                  <div className="suit-row-cards">
+                    {cards.map((card, idx) => (
+                      <Card
+                        key={`${card.suit}-${card.rank}-${idx}`}
+                        card={card}
+                        overlap
+                        draggable={isMyTurn && hasFinePointer}
+                        onDragStart={handleDragStart}
+                        onDragEnd={handleDragEnd}
+                        onClick={isMyTurn ? handleCardSelect : undefined}
+                        disabled={!isMyTurn}
+                        selected={isCardEqual(selectedCard, card)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+            {sortedHand.length === 0 && (
+              <div className="py-8 w-full text-center" style={EMPTY_TEXT_STYLE}>
+                {myPlayer?.is_winner ? "You've won!" : "No cards"}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Notifications */}
       <div aria-live="polite" className="fixed left-1/2 transform -translate-x-1/2 z-50" style={NOTIF_BOTTOM_STYLE}>
         {notification && (
-          <div className="px-4 py-2 bg-emerald-700 text-white rounded-lg shadow-lg text-sm">
+          <div className="px-4 py-2 bg-emerald-700 text-white rounded-lg shadow-lg text-sm animate-toast">
             {notification}
           </div>
         )}
@@ -906,7 +1034,7 @@ const KazhuthaGame = () => {
 
       <div aria-live="assertive" className="fixed left-1/2 transform -translate-x-1/2 z-50" style={ERROR_BOTTOM_STYLE}>
         {error && (
-          <div className="px-4 py-2 bg-red-600 text-white rounded-lg shadow-lg text-sm">
+          <div className="px-4 py-2 bg-red-600 text-white rounded-lg shadow-lg text-sm animate-toast">
             {error}
           </div>
         )}

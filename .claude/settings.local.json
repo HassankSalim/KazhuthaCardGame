@@ -3,7 +3,10 @@
     "allow": [
       "Bash(tree:*)",
       "Bash(npm run build:*)",
-      "Bash(npx react-scripts build:*)"
+      "Bash(npx react-scripts build:*)",
+      "Bash(ls -lh /Users/hassanksalim/PythonProjects/Kazhutha/*.html)",
+      "Bash(find /Users/hassanksalim/PythonProjects/Kazhutha/.claude/skills/ -type f -name \"*.md\" 2>/dev/null | head -20)",
+      "Bash(cat package.json | python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); deps=d.get\\('dependencies',{}\\); print\\('Dependencies:'\\); [print\\(f'  {k}: {v}'\\) for k,v in sorted\\(deps.items\\(\\)\\)]\")"
     ]
   }
 }
