@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Card, { SUIT_CONFIG } from './Card';
+import HowToPlay from './HowToPlay';
 
 // In production (HTTPS), use the same host. In development, use localhost:8000
 const IS_SECURE = window.location.protocol === 'https:';
@@ -59,6 +60,7 @@ const KazhuthaGame = () => {
   const resolvedPileTimeoutRef = useRef(null);
   const takenHandTimeoutRef = useRef(null);
   const screenRef = useRef('welcome');
+  const prevScreenRef = useRef('welcome');
   const gameOverRef = useRef(null);
 
   useEffect(() => {
@@ -445,146 +447,303 @@ const KazhuthaGame = () => {
       .map(s => ({ suit: s, cards: groups[s] }));
   }, [sortedHand]);
 
+  // How to Play Screen
+  if (screen === 'howToPlay') {
+    return <HowToPlay onBack={() => setScreen(prevScreenRef.current || 'welcome')} />;
+  }
+
   // Welcome Screen
   if (screen === 'welcome') {
     const hasGameCode = joinCode.trim().length > 0;
     const hasName = playerName.trim().length > 0;
+    const createActive = hasName && !hasGameCode && !isLoading;
+    const joinActive = hasName && hasGameCode && !isLoading;
 
     return (
-      <main className="flex items-center justify-center p-4" style={APP_HEIGHT_STYLE}>
-        <div className="game-card w-full max-w-md p-6 sm:p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-5xl sm:text-6xl font-black text-white mb-3 tracking-tight" style={DISPLAY_FONT_STYLE}>Kazhutha</h1>
-            <p className="text-felt-muted text-sm tracking-widest uppercase">A classic card game</p>
+      <div className="flex flex-col bg-brand-dark relative overflow-x-hidden" style={APP_HEIGHT_STYLE}>
+        {/* Floating suit icons */}
+        <div className="floating-icon text-9xl top-20 left-10" aria-hidden="true" style={{ animationDelay: '0s' }}>♠</div>
+        <div className="floating-icon text-8xl bottom-20 left-[15%]" aria-hidden="true" style={{ animationDelay: '2s', animationDuration: '15s' }}>♥</div>
+        <div className="floating-icon text-9xl top-1/4 right-10" aria-hidden="true" style={{ animationDelay: '4s', animationDuration: '10s' }}>♣</div>
+        <div className="floating-icon text-8xl bottom-10 right-[20%]" aria-hidden="true" style={{ animationDelay: '6s' }}>♦</div>
+        <div className="floating-icon text-7xl top-1/2 left-5" aria-hidden="true" style={{ animationDelay: '1s', animationDuration: '14s' }}>♦</div>
+        <div className="floating-icon text-7xl bottom-1/3 right-5" aria-hidden="true" style={{ animationDelay: '5s', animationDuration: '16s' }}>♠</div>
+
+        {/* Header */}
+        <header className="flex items-center justify-between px-6 md:px-20 py-4 border-b border-brand-primary/20 bg-brand-dark/80 backdrop-blur-md sticky top-0 z-50">
+          <div className="flex items-center gap-3">
+            <span className="text-emerald-500 text-2xl" aria-hidden="true">♠</span>
+            <h2 className="text-white text-xl font-extrabold tracking-tight">Kazhutha</h2>
           </div>
+          <button
+            onClick={() => { prevScreenRef.current = screen; setScreen('howToPlay'); }}
+            className="w-10 h-10 flex items-center justify-center rounded-lg bg-brand-primary/10 hover:bg-brand-primary/20 transition-colors text-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+            aria-label="How to play"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </button>
+        </header>
 
-          <div className="space-y-4">
-            <input
-              type="text"
-              placeholder="Enter your name"
-              value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
-              className="input-field"
-              maxLength={20}
-              aria-label="Your name"
-            />
-
-            <input
-              type="text"
-              placeholder="Enter game code"
-              value={joinCode}
-              onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-              className="input-field"
-              maxLength={6}
-              aria-label="Game code"
-            />
-
-            <div className="flex gap-3">
-              <button
-                onClick={createGame}
-                disabled={!hasName || hasGameCode || isLoading}
-                className={`btn-primary flex-1 ${(!hasName || hasGameCode || isLoading) ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {isLoading ? 'Creating...' : 'Create Game'}
-              </button>
-              <button
-                onClick={joinGame}
-                disabled={!hasName || !hasGameCode || isLoading}
-                className={`btn-secondary flex-1 ${(!hasName || !hasGameCode || isLoading) ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {isLoading ? 'Joining...' : 'Join Game'}
-              </button>
+        {/* Main content */}
+        <main className="flex-grow flex flex-col items-center justify-center px-4 py-8 relative z-10">
+          <div className="w-full max-w-md animate-entrance">
+            {/* Hero banner */}
+            <div className="bg-brand-primary/30 rounded-t-2xl py-10 px-6 text-center border border-brand-primary/40 border-b-0">
+              <h1 className="text-brand-gold text-4xl md:text-5xl font-black tracking-wide mb-2" style={DISPLAY_FONT_STYLE}>KAZHUTHA</h1>
+              <p className="text-emerald-200/60 text-sm font-bold tracking-[0.3em] uppercase">A Classic Card Game</p>
             </div>
+
+            {/* Form */}
+            <form
+              className="bg-surface-card rounded-b-2xl p-6 md:p-8 space-y-5 animate-entrance-1"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (hasName && hasGameCode && !isLoading) joinGame();
+                else if (hasName && !hasGameCode && !isLoading) createGame();
+              }}
+            >
+              {/* Name Input */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold uppercase tracking-widest text-emerald-100/60" htmlFor="player-name">
+                  Display Name
+                </label>
+                <div className="relative">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  <input
+                    type="text"
+                    id="player-name"
+                    placeholder="e.g. AceOfSpades"
+                    value={playerName}
+                    onChange={(e) => setPlayerName(e.target.value)}
+                    className="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-brand-primary/40 bg-brand-primary/10 text-white placeholder-emerald-600 focus:border-emerald-500 focus:ring-0 transition-colors"
+                    maxLength={20}
+                  />
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="relative py-2">
+                <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                  <div className="w-full border-t border-brand-primary/30"></div>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase tracking-widest font-bold">
+                  <span className="bg-surface-card px-4 text-emerald-600">Join an existing lobby</span>
+                </div>
+              </div>
+
+              {/* Code Input */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold uppercase tracking-widest text-emerald-100/60" htmlFor="game-code">
+                  Game Code
+                </label>
+                <div className="relative">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 7h3a5 5 0 015 5 5 5 0 01-5 5h-3m-6 0H6a5 5 0 01-5-5 5 5 0 015-5h3"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                  <input
+                    type="text"
+                    id="game-code"
+                    placeholder="— — — — — —"
+                    value={joinCode}
+                    onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                    className="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-brand-primary/40 bg-brand-primary/10 text-white font-mono uppercase text-center text-xl tracking-[0.4em] placeholder-emerald-600 focus:border-emerald-500 focus:ring-0 transition-colors"
+                    maxLength={6}
+                  />
+                </div>
+              </div>
+
+              {/* Create Button — gold 3D style matching lobby */}
+              <button
+                type={createActive ? 'submit' : 'button'}
+                onClick={createActive ? createGame : undefined}
+                disabled={!createActive}
+                className={`w-full py-4 rounded-xl font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card ${
+                  createActive
+                    ? 'bg-brand-gold hover:brightness-110 text-brand-dark shadow-[0_4px_0_0_theme(colors.brand.gold-shadow)] hover:shadow-[0_2px_0_0_theme(colors.brand.gold-shadow)] active:shadow-none active:translate-y-1'
+                    : 'bg-brand-gold/40 text-brand-dark/50 cursor-not-allowed'
+                }`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                {isLoading && !hasGameCode ? 'Creating...' : 'Create New Game'}
+              </button>
+
+              {/* Join Button — outlined style matching lobby */}
+              <button
+                type={joinActive ? 'submit' : 'button'}
+                onClick={joinActive ? joinGame : undefined}
+                disabled={!joinActive}
+                className={`w-full py-4 rounded-xl font-bold uppercase tracking-widest flex items-center justify-center gap-2 border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card ${
+                  joinActive
+                    ? 'border-brand-gold/60 text-brand-gold hover:bg-brand-gold/10 shadow-[0_4px_0_0_theme(colors.brand.gold-shadow)/30] hover:shadow-[0_2px_0_0_theme(colors.brand.gold-shadow)/30] active:shadow-none active:translate-y-1'
+                    : 'border-brand-primary/20 text-emerald-800 cursor-not-allowed'
+                }`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                {isLoading && hasGameCode ? 'Joining...' : 'Join Game'}
+              </button>
+            </form>
           </div>
 
+          {/* Footer */}
+          <p className="mt-8 text-emerald-600 text-xs tracking-widest uppercase">Kazhutha Digital &copy; 2024</p>
+
+          {/* Error toast */}
           {error && (
-            <div role="alert" className="mt-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300 text-sm text-center">
+            <div role="alert" className="fixed left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-red-600 text-white rounded-lg shadow-lg text-sm animate-toast" style={ERROR_BOTTOM_STYLE}>
               {error}
             </div>
           )}
-        </div>
-      </main>
+        </main>
+      </div>
     );
   }
 
   // Lobby Screen
   if (screen === 'lobby') {
+    const players = gameData?.players || [{ name: playerName, is_host: true }];
+    const maxPlayers = 8;
+    const emptySlots = Math.max(0, Math.min(maxPlayers, 4) - players.length);
+
     return (
-      <main className="flex items-center justify-center p-4" style={APP_HEIGHT_STYLE}>
-        <div className="game-card w-full max-w-md p-6 sm:p-8">
-          <div className="text-center mb-6">
-            <h1 className="text-3xl sm:text-4xl font-black text-white mb-2 tracking-tight" style={DISPLAY_FONT_STYLE}>Game Lobby</h1>
-            <div className="flex items-center justify-center gap-2">
-              <span className="text-felt-muted">Code:</span>
-              <span className="font-mono text-2xl text-emerald-400 tracking-widest">{gameId}</span>
+      <div className="flex flex-col bg-brand-dark relative overflow-x-hidden" style={APP_HEIGHT_STYLE}>
+        {/* Floating suit icons — same as welcome screen (#2) */}
+        <div className="floating-icon text-9xl top-20 left-10" aria-hidden="true" style={{ animationDelay: '0s' }}>♠</div>
+        <div className="floating-icon text-8xl bottom-20 left-[15%]" aria-hidden="true" style={{ animationDelay: '2s', animationDuration: '15s' }}>♥</div>
+        <div className="floating-icon text-9xl top-1/4 right-10" aria-hidden="true" style={{ animationDelay: '4s', animationDuration: '10s' }}>♣</div>
+        <div className="floating-icon text-8xl bottom-10 right-[20%]" aria-hidden="true" style={{ animationDelay: '6s' }}>♦</div>
+        <div className="floating-icon text-7xl top-1/2 left-5" aria-hidden="true" style={{ animationDelay: '1s', animationDuration: '14s' }}>♦</div>
+        <div className="floating-icon text-7xl bottom-1/3 right-5" aria-hidden="true" style={{ animationDelay: '5s', animationDuration: '16s' }}>♠</div>
+
+        {/* Shared header bar — same as welcome screen (#1) */}
+        <header className="flex items-center justify-between px-6 md:px-20 py-4 border-b border-brand-primary/20 bg-brand-dark/80 backdrop-blur-md sticky top-0 z-50">
+          <div className="flex items-center gap-3">
+            <span className="text-emerald-500 text-2xl" aria-hidden="true">♠</span>
+            <h2 className="text-white text-xl font-extrabold tracking-tight">Kazhutha</h2>
+          </div>
+          <button
+            onClick={() => { prevScreenRef.current = screen; setScreen('howToPlay'); }}
+            className="w-10 h-10 flex items-center justify-center rounded-lg bg-brand-primary/10 hover:bg-brand-primary/20 transition-colors text-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+            aria-label="How to play"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </button>
+        </header>
+
+        {/* Main content */}
+        <main className="flex-grow flex flex-col items-center justify-center px-4 py-8 relative z-10">
+          <div className="w-full max-w-md animate-entrance">
+            {/* Game Code Section */}
+            <section className="bg-brand-primary/30 rounded-t-2xl p-5 md:p-6 border border-brand-primary/40 border-b-0 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-entrance-1">
+              <div>
+                <h1 className="text-brand-gold text-xl md:text-2xl font-black tracking-wide mb-1" style={DISPLAY_FONT_STYLE}>GAME LOBBY</h1>
+                <div className="flex items-center gap-2">
+                  <span className="text-white/50 text-xs uppercase tracking-widest">Room Code</span>
+                  <span className="text-lg md:text-xl font-bold text-white tracking-[0.2em] font-mono">{gameId}</span>
+                </div>
+              </div>
               <button
                 onClick={copyGameCode}
-                className="p-3 text-felt-dim hover:text-felt-light rounded transition-colors"
+                className="bg-brand-gold hover:brightness-110 text-brand-dark font-bold py-3 px-6 rounded-lg text-sm uppercase tracking-widest shadow-[0_3px_0_0_theme(colors.brand.gold-shadow)] hover:shadow-[0_1px_0_0_theme(colors.brand.gold-shadow)] active:shadow-none active:translate-y-[2px] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold focus-visible:ring-offset-2 focus-visible:ring-offset-brand-dark"
                 aria-label="Copy game code"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={COPY_ICON_PATH} />
-                </svg>
+                Copy Code
               </button>
+            </section>
+
+            {/* Players + Actions card */}
+            <div className="bg-surface-card rounded-b-2xl p-6 md:p-8 animate-entrance-2">
+              {/* Player count */}
+              <div className="flex items-center justify-center gap-2 mb-6">
+                <span className="relative flex h-3 w-3" aria-hidden="true">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                </span>
+                <span className="text-white/70 font-semibold text-sm">{players.length} / {maxPlayers} Players</span>
+              </div>
+
+              {/* Players Grid */}
+              <section className="grid grid-cols-2 sm:grid-cols-3 gap-6 mb-8" aria-label="Players in lobby">
+                {players.map((player) => {
+                  const isYou = player.name === playerName;
+                  return (
+                    <div key={player.name} className="flex flex-col items-center group">
+                      <div className="relative">
+                        <div className={`w-20 h-20 md:w-24 md:h-24 rounded-full border-4 ${
+                          player.is_host ? 'border-emerald-500' : 'border-white/10'
+                        } flex items-center justify-center mb-2 transition-transform group-hover:scale-105 ${
+                          player.is_host ? 'bg-brand-primary/30' : 'bg-white/5'
+                        }`}>
+                          <span className={`text-2xl md:text-3xl font-bold ${
+                            player.is_host ? 'text-emerald-400' : 'text-white/70'
+                          }`}>
+                            {player.name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        {player.is_host && (
+                          <span className="absolute -top-2 -right-2 bg-emerald-500 text-brand-dark text-[10px] font-bold px-2 py-1 rounded-full border-2 border-surface-card uppercase">Host</span>
+                        )}
+                      </div>
+                      <span className={`font-semibold text-sm truncate max-w-[100px] ${isYou ? 'text-white' : 'text-white/80'}`}>
+                        {player.name}{isYou && ' (You)'}
+                      </span>
+                    </div>
+                  );
+                })}
+
+                {/* Empty slots */}
+                {Array.from({ length: emptySlots }).map((_, i) => (
+                  <div key={`empty-${i}`} className="flex flex-col items-center opacity-30">
+                    <div className="w-20 h-20 md:w-24 md:h-24 rounded-full border-4 border-dashed border-white/40 flex items-center justify-center mb-2">
+                      <span className="text-white text-3xl" aria-hidden="true">+</span>
+                    </div>
+                    <span className="text-white/50 text-sm">Waiting...</span>
+                  </div>
+                ))}
+              </section>
+
+              {/* Actions */}
+              <footer className="flex flex-col items-center space-y-4">
+                {isHost ? (
+                  <button
+                    onClick={startGame}
+                    disabled={(players.length) < 2 || isLoading}
+                    className={`bg-brand-gold hover:brightness-110 text-brand-dark font-bold py-4 px-12 rounded-xl text-lg shadow-[0_4px_0_0_theme(colors.brand.gold-shadow)] hover:shadow-[0_2px_0_0_theme(colors.brand.gold-shadow)] active:shadow-none active:translate-y-1 transition-all uppercase tracking-widest w-full sm:w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card ${
+                      (players.length) < 2 || isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    {isLoading ? 'Starting...' : (players.length) < 2 ? 'Waiting for players...' : 'Start Game'}
+                  </button>
+                ) : (
+                  <div className="flex flex-col items-center space-y-2">
+                    <div className="flex gap-1" aria-hidden="true">
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" style={{ animationDelay: '0s' }}></div>
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" style={{ animationDelay: '0.3s' }}></div>
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" style={{ animationDelay: '0.6s' }}></div>
+                    </div>
+                    <p className="text-white/60 italic text-sm">Waiting for host to start...</p>
+                  </div>
+                )}
+                <button onClick={resetGame} className="btn-text w-full">
+                  Leave Lobby
+                </button>
+              </footer>
             </div>
           </div>
 
-          <div className="mb-6">
-            <h3 className="text-felt-muted text-sm mb-3">Players ({gameData?.players?.length || 1}/8)</h3>
-            <div className="space-y-2">
-              {(gameData?.players || [{ name: playerName, is_host: true }]).map((player) => (
-                <div
-                  key={player.name}
-                  className={`player-card ${player.name === playerName ? 'ring-1 ring-emerald-500/50' : ''}`}
-                >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                    player.is_host ? 'bg-amber-500/20 text-amber-400' : 'bg-white/10 text-felt-light'
-                  }`}>
-                    {player.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="flex-1">
-                    <span className="text-cream font-medium">{player.name}</span>
-                    {player.name === playerName && <span className="text-emerald-400 text-sm ml-1">(You)</span>}
-                  </div>
-                  {player.is_host && (
-                    <span className="text-xs px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded">Host</span>
-                  )}
-                </div>
-              ))}
-            </div>
+          {/* Footer */}
+          <p className="mt-8 text-emerald-600 text-xs tracking-widest uppercase">Kazhutha Digital &copy; 2024</p>
+        </main>
+
+        {/* Notifications */}
+        {notification && (
+          <div role="status" className="fixed left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-emerald-700 text-white rounded-lg shadow-lg text-sm animate-toast" style={NOTIF_BOTTOM_STYLE}>
+            {notification}
           </div>
-
-          {isHost ? (
-            <button
-              onClick={startGame}
-              disabled={(gameData?.players?.length || 1) < 2 || isLoading}
-              className={`btn-primary w-full ${((gameData?.players?.length || 1) < 2 || isLoading) ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              {isLoading ? 'Starting...' : (gameData?.players?.length || 1) < 2 ? 'Waiting for players...' : 'Start Game'}
-            </button>
-          ) : (
-            <div className="text-center text-felt-dim py-4">
-              Waiting for host to start...
-            </div>
-          )}
-
-          <button onClick={resetGame} className="w-full mt-4 text-felt-dim hover:text-felt-light text-sm transition-colors rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400">
-            Leave Lobby
-          </button>
-
-          {notification && (
-            <div role="status" className="mt-4 p-3 bg-emerald-500/20 border border-emerald-500/50 rounded-lg text-emerald-300 text-sm text-center">
-              {notification}
-            </div>
-          )}
-
-          {error && (
-            <div role="alert" className="mt-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300 text-sm text-center">
-              {error}
-            </div>
-          )}
-        </div>
-      </main>
+        )}
+        {error && (
+          <div role="alert" className="fixed left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-red-600 text-white rounded-lg shadow-lg text-sm animate-toast" style={ERROR_BOTTOM_STYLE}>
+            {error}
+          </div>
+        )}
+      </div>
     );
   }
 
@@ -598,13 +757,13 @@ const KazhuthaGame = () => {
   const currentSuitSymbol = currentSuitConfig?.symbol ?? null;
 
   return (
-    <main className="flex flex-col overflow-hidden" style={MAIN_HEIGHT_STYLE}>
+    <main className="flex flex-col overflow-hidden bg-brand-dark" style={MAIN_HEIGHT_STYLE}>
       <h1 className="sr-only">Kazhutha Game{isMyTurn ? ' - Your Turn' : ''}</h1>
 
       {/* Game Over Modal */}
       {screen === 'finished' && (
         <div
-          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 animate-backdrop"
           role="dialog"
           aria-modal="true"
           aria-labelledby="game-over-title"
@@ -627,7 +786,7 @@ const KazhuthaGame = () => {
             }
           }}
         >
-          <div className="game-card p-8 text-center max-w-md w-full">
+          <div className="game-card p-8 text-center max-w-md w-full animate-modal">
             <h2 id="game-over-title" className="text-4xl sm:text-5xl font-black text-white mb-4 tracking-tight" style={DISPLAY_FONT_STYLE}>Game Over!</h2>
             {gameData?.kazhutha === playerName ? (
               <div className="mb-6">
@@ -642,12 +801,12 @@ const KazhuthaGame = () => {
             {isHost ? (
               <div className="space-y-3">
                 <button onClick={playAgain} className="btn-primary w-full">Play Again</button>
-                <button onClick={resetGame} className="w-full text-felt-dim hover:text-felt-light text-sm transition-colors rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400">Leave Game</button>
+                <button onClick={resetGame} className="btn-text w-full">Leave Game</button>
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="text-felt-dim py-2 text-sm">Waiting for host to play again...</div>
-                <button onClick={resetGame} className="w-full text-felt-dim hover:text-felt-light text-sm transition-colors rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400">Leave Game</button>
+                <div className="text-felt-muted py-2 text-sm">Waiting for host to play again...</div>
+                <button onClick={resetGame} className="btn-text w-full">Leave Game</button>
               </div>
             )}
           </div>
@@ -850,7 +1009,7 @@ const KazhuthaGame = () => {
       {/* Notifications */}
       <div aria-live="polite" className="fixed left-1/2 transform -translate-x-1/2 z-50" style={NOTIF_BOTTOM_STYLE}>
         {notification && (
-          <div className="px-4 py-2 bg-emerald-700 text-white rounded-lg shadow-lg text-sm">
+          <div className="px-4 py-2 bg-emerald-700 text-white rounded-lg shadow-lg text-sm animate-toast">
             {notification}
           </div>
         )}
@@ -858,7 +1017,7 @@ const KazhuthaGame = () => {
 
       <div aria-live="assertive" className="fixed left-1/2 transform -translate-x-1/2 z-50" style={ERROR_BOTTOM_STYLE}>
         {error && (
-          <div className="px-4 py-2 bg-red-600 text-white rounded-lg shadow-lg text-sm">
+          <div className="px-4 py-2 bg-red-600 text-white rounded-lg shadow-lg text-sm animate-toast">
             {error}
           </div>
         )}

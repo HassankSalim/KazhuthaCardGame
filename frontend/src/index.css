@@ -5,13 +5,13 @@
 :root {
   --app-height: 100dvh;
 
-  /* Theme colors — single source of truth */
+  /* Theme colors — aligned with Tailwind tokens in tailwind.config.js */
   --color-cream: #e8e4dc;
   --color-card-bg: #f5f2eb;
   --color-felt: #1a2e1a;
-  --color-gold: #c9a84c;
-  --color-gold-dim: #8a7235;
-  --color-teal: #2dd4a8;
+  --color-gold: #d4af37;
+  --color-gold-dim: #b8902d;
+  --color-teal: #10b981;
   --color-suit-red: #c0392b;
 
   /* Card sizes — responsive */
@@ -138,8 +138,8 @@ body {
 
   .card-selected {
     transform: translateY(-16px) scale(1.05);
-    box-shadow: 0 12px 32px rgba(45, 212, 168, 0.3),
-                inset 0 0 0 2px rgba(45, 212, 168, 0.6);
+    box-shadow: 0 12px 32px rgba(16, 185, 129, 0.3),
+                inset 0 0 0 2px rgba(16, 185, 129, 0.6);
     z-index: 10;
   }
 
@@ -167,15 +167,15 @@ body {
 
   /* ── Drop zone ── */
   .table-center.drop-zone-active {
-    border-color: rgba(45,212,168,0.4);
-    background: rgba(45,212,168,0.04);
-    box-shadow: inset 0 0 20px rgba(45, 212, 168, 0.15);
+    border-color: rgba(16,185,129,0.4);
+    background: rgba(16,185,129,0.04);
+    box-shadow: inset 0 0 20px rgba(16, 185, 129, 0.15);
   }
 
   .drop-zone-ready {
     border-style: solid;
-    border-color: rgba(45,212,168,0.4);
-    background: rgba(45,212,168,0.04);
+    border-color: rgba(16,185,129,0.4);
+    background: rgba(16,185,129,0.04);
     animation: pulse-glow 1.5s ease-in-out infinite;
   }
 
@@ -197,6 +197,11 @@ body {
            placeholder-felt-muted focus:outline-none focus:ring-2 focus:ring-emerald-400
            focus:border-transparent;
     transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .btn-text {
+    @apply py-3 text-felt-muted hover:text-felt-light text-sm transition-colors
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:rounded;
   }
 
   .game-card {
@@ -232,8 +237,8 @@ body {
 
   .player-chip.you,
   .player-chip-active {
-    background: rgba(45,212,168,0.15);
-    border-color: rgba(45,212,168,0.3);
+    background: rgba(16,185,129,0.15);
+    border-color: rgba(16,185,129,0.3);
   }
 
   .player-avatar {
@@ -251,8 +256,8 @@ body {
   .take-hand-btn {
     padding: 10px 16px;
     border-radius: 8px;
-    border: 1px solid rgba(201,168,76,0.35);
-    background: rgba(201,168,76,0.12);
+    border: 1px solid rgba(212,175,55,0.35);
+    background: rgba(212,175,55,0.12);
     color: var(--color-gold);
     font-size: 11px;
     font-weight: 600;
@@ -270,9 +275,9 @@ body {
   }
 
   .take-hand-btn:hover {
-    background: rgba(201,168,76,0.22);
+    background: rgba(212,175,55,0.22);
     border-color: var(--color-gold);
-    box-shadow: 0 0 14px rgba(201,168,76,0.12);
+    box-shadow: 0 0 14px rgba(212,175,55,0.12);
   }
 
   /* ── Game code ── */
@@ -308,7 +313,7 @@ body {
   }
 
   .suit-row.led {
-    background: rgba(45,212,168,0.04);
+    background: rgba(16,185,129,0.04);
   }
 
   .suit-row-cards {
@@ -326,21 +331,21 @@ body {
     aspect-ratio: 4 / 3;
     max-height: 75%;
     border-radius: 24px;
-    border: 2px dashed rgba(45,212,168,0.25);
-    background: rgba(45,212,168,0.02);
+    border: 2px dashed rgba(16,185,129,0.25);
+    background: rgba(16,185,129,0.02);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    box-shadow: inset 0 0 80px rgba(45,212,168,0.02);
+    box-shadow: inset 0 0 80px rgba(16,185,129,0.02);
     transition: border-color 0.3s, background 0.3s, box-shadow 0.3s;
     contain: layout style;
   }
 
   .table-center.active {
-    border-color: rgba(45,212,168,0.4);
-    background: rgba(45,212,168,0.04);
+    border-color: rgba(16,185,129,0.4);
+    background: rgba(16,185,129,0.04);
   }
 
   /* ── Legacy player card (lobby) ── */
@@ -350,20 +355,101 @@ body {
 
 }
 
+/* Entrance animations — ease-out-quart for natural deceleration */
+@keyframes entrance-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes modal-reveal {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes backdrop-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.animate-entrance {
+  animation: entrance-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-entrance-1 {
+  animation: entrance-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+}
+
+.animate-entrance-2 {
+  animation: entrance-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+}
+
+.animate-backdrop {
+  animation: backdrop-fade 0.3s ease-out both;
+}
+
+.animate-modal {
+  animation: modal-reveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+}
+
+.animate-toast {
+  animation: toast-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes float {
+  0% { transform: translate(0px, 0px) rotate(0deg); }
+  33% { transform: translate(20px, -30px) rotate(5deg); }
+  66% { transform: translate(-15px, -15px) rotate(-5deg); }
+  100% { transform: translate(0px, 0px) rotate(0deg); }
+}
+
+.floating-icon {
+  animation: float 12s ease-in-out infinite;
+  opacity: 0.08;
+  position: absolute;
+  z-index: 0;
+  color: #fff;
+  user-select: none;
+  pointer-events: none;
+  will-change: transform;
+}
+
 @keyframes pulse-glow {
   0%, 100% {
-    border-color: rgba(45, 212, 168, 0.3);
-    box-shadow: inset 0 0 12px rgba(45, 212, 168, 0.05);
+    border-color: rgba(16, 185, 129, 0.3);
+    box-shadow: inset 0 0 12px rgba(16, 185, 129, 0.05);
   }
   50% {
-    border-color: rgba(45, 212, 168, 0.6);
-    box-shadow: inset 0 0 20px rgba(45, 212, 168, 0.15);
+    border-color: rgba(16, 185, 129, 0.6);
+    box-shadow: inset 0 0 20px rgba(16, 185, 129, 0.15);
   }
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(45,212,168,0.5); }
-  50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(45,212,168,0); }
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(16,185,129,0.5); }
+  50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(16,185,129,0); }
 }
 
 .turn-dot {
